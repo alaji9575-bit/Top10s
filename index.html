@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>توب 10s | تحدي العشرة</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="header">
+        <h1>توب <span>10s</span></h1>
+        <p>اختبر معلوماتك وتحدَّ نفسك!</p>
+    </header>
+
+    <main class="container">
+        <section class="welcome">
+            <h2>هل أنت مستعد للتحدي؟</h2>
+            <p>اكتشف الإجابات العشر قبل نفاد محاولاتك.</p>
+            <button id="startBtn">ابدأ التحدي</button>
+        </section>
+
+        <section class="game" id="game">
+            <h2 id="question">أفضل 10 أشياء</h2>
+<div class="stats">
+    <div class="stat-box">
+        <span>الإجابات المكتشفة</span>
+        <strong id="scoreCount">0 / 10</strong>
+    </div>
+
+    <div class="stat-box">
+        <span>النقاط</span>
+        <strong id="pointsCount">0</strong>
+    </div>
+</div>
+            <div class="mistakes" id="mistakes">
+                <span>○</span><span>○</span><span>○</span>
+                <span>○</span><span>○</span>
+            </div>
+
+            <div class="answers" id="answers"></div>
+
+            <div class="answer-input">
+                <input id="answerInput" type="text"
+                    placeholder="اكتب إجابتك هنا">
+                <button id="submitBtn">إرسال</button>
+            </div>
+
+            <p id="message"></p>
+          <button id="newChallengeBtn" style="display:none;">
+    تحدٍّ جديد
+          </button>
+          <button id="skipBtn">
+    تخطي التحدي ⏭
+          </button>
+          <button id="hintBtn">
+    💡 تلميح <span id="hintsCount">3</span>
+          </button>
+          <div id="results" style="display:none;">
+    <h2>انتهى التحدي!</h2>
+            <p id="resultMessage">أحسنت!</p>
+            <button id="homeBtn">العودة إلى القائمة الرئيسية</button>
+    <p>إجاباتك الصحيحة: <strong id="finalAnswers">0 / 10</strong></p>
+    <p>مجموع نقاطك: <strong id="finalPoints">0</strong></p>
+          </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

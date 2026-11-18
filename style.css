@@ -1,0 +1,242 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Cairo', sans-serif;
+    background: #0b1020;
+    color: white;
+    min-height: 100vh;
+}
+
+.header {
+    text-align: center;
+    padding: 35px 15px;
+    background: linear-gradient(135deg, #171f3c, #252d50);
+    border-bottom: 1px solid #343d60;
+}
+
+.header h1 {
+    font-size: 38px;
+    font-weight: 800;
+}
+
+.header h1 span {
+    color: #f6c453;
+}
+
+.header p {
+    color: #b8c2dc;
+    margin-top: 5px;
+}
+
+.container {
+    width: 90%;
+    max-width: 650px;
+    margin: 45px auto;
+}
+
+.welcome, .game {
+    background: #151d33;
+    padding: 28px;
+    border-radius: 20px;
+    border: 1px solid #303b5c;
+    text-align: center;
+    box-shadow: 0 15px 40px #0005;
+}
+
+.welcome h2, .game h2 {
+    font-size: 24px;
+    margin-bottom: 12px;
+}
+
+.welcome p {
+    color: #b8c2dc;
+    margin-bottom: 25px;
+}
+
+button {
+    font-family: inherit;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 25px;
+    background: #f6c453;
+    color: #171717;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+.game {
+    display: none;
+}
+
+.mistakes {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 20px 0;
+    color: #ff5d70;
+    font-size: 30px;
+}
+
+.answers {
+    display: grid;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.answer-slot {
+    background: #202b46;
+    border: 1px solid #35415f;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: right;
+    color: #aebbd5;
+}
+
+.answer-input {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.answer-input input {
+    min-width: 0;
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #465274;
+    background: #0d1529;
+    color: white;
+    font-family: inherit;
+    font-size: 15px;
+}
+
+.answer-input input:focus {
+    outline: 2px solid #f6c453;
+}
+
+#message {
+    margin-top: 18px;
+    font-weight: 700;
+}
+
+@media (max-width: 480px) {
+    .container {
+        width: 94%;
+        margin: 25px auto;
+    }
+
+    .welcome, .game {
+        padding: 20px 15px;
+    }
+
+    .header h1 {
+        font-size: 32px;
+    }
+}
+.stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.stat-box {
+    background: #202b46;
+    border: 1px solid #35415f;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.stat-box span {
+    color: #b8c2dc;
+    font-size: 13px;
+}
+
+.stat-box strong {
+    color: #f6c453;
+    font-size: 22px;
+}
+#results {
+    background: linear-gradient(145deg, #202b46, #172137);
+    border: 1px solid #f6c453;
+    border-radius: 18px;
+    padding: 25px 15px;
+    margin-top: 20px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+#results h2 {
+    color: #f6c453;
+    font-size: 25px;
+    margin-bottom: 18px;
+}
+
+#results p {
+    color: #ffffff;
+    font-size: 17px;
+    margin: 12px 0;
+}
+
+#results strong {
+    color: #8fffc2;
+    font-size: 22px;
+}
+#hintBtn {
+    background: linear-gradient(135deg, #f5c542, #e89b16);
+    color: #222;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(245, 197, 66, 0.25);
+    transition: 0.2s;
+}
+
+#hintBtn:hover {
+    transform: translateY(-2px);
+}
+
+#hintsCount {
+    display: inline-block;
+    background: #222;
+    color: #ffd65a;
+    border-radius: 50%;
+    min-width: 24px;
+    padding: 4px;
+    margin-right: 6px;
+}
+@keyframes correctAnswer {
+    0% {
+        transform: scale(1);
+        background: #1e8e5a;
+    }
+    50% {
+        transform: scale(1.05);
+        background: #35c982;
+    }
+    100% {
+        transform: scale(1);
+        background: #1e8e5a;
+    }
+}
+
+.correct-animation {
+    animation: correctAnswer 0.4s ease;
+}
