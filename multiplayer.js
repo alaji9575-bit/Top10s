@@ -106,6 +106,24 @@ li.textContent =
         });
     });
 }
+// مراقبة حالة المباراة
+function listenToRoomStatus() {
+    if (!currentRoomCode) return;
+
+    const statusRef = ref(
+        db,
+        "rooms/" + currentRoomCode + "/status"
+    );
+
+    onValue(statusRef, (snapshot) => {
+        const status = snapshot.val();
+
+        if (status === "playing") {
+            roomMessage.textContent = "بدأت المباراة!";
+            startMatchBtn.style.display = "none";
+        }
+    });
+}
 // إنشاء رمز عشوائي للغرفة
 function generateRoomCode() {
     const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -158,6 +176,7 @@ async function createRoom() {
                 isHost = true;
                 startMatchBtn.style.display = "block";
                 listenToRoomPlayers();
+                listenToRoomStatus();
                 roomMessage.textContent =
                     "رمز غرفتك: " + code;
                 created = true;
@@ -270,6 +289,7 @@ async function joinRoom() {
         isHost = result.snapshot.val().hostUid === currentUser.uid;
         startMatchBtn.style.display = isHost ? "block" : "none";
 listenToRoomPlayers();
+        listenToRoomStatus();
         roomMessage.textContent =
             "انضممت إلى الغرفة بنجاح: " + code;
 
