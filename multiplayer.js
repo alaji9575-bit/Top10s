@@ -134,3 +134,5 @@ async function createRoom() {
             "تعذّر إنشاء الغرفة حاليًا.";
     }
 }
+// تشغيل إنشاء الغرفة عند الضغط على الزر
+createRoomBtn.addEventListener("click", createRoom);
