@@ -94,10 +94,12 @@ function listenToRoomPlayers() {
         playerIds.forEach((uid, index) => {
             const li = document.createElement("li");
 
-            li.textContent =
-                uid === currentUser.uid
-                    ? "أنت (اللاعب " + (index + 1) + ")"
-                    : "اللاعب " + (index + 1);
+            const playerName = players[uid].name || "لاعب " + (index + 1);
+
+li.textContent =
+    uid === currentUser.uid
+        ? playerName + " (أنت)"
+        : playerName;
 
             playersList.appendChild(li);
         });
@@ -139,12 +141,13 @@ async function createRoom() {
                     status: "waiting",
                     createdAt: Date.now(),
                     players: {
-                        [currentUser.uid]: {
-                            uid: currentUser.uid,
-                            score: 0,
-                            mistakes: 0,
-                            hintsUsed: 0
-                        }
+    [currentUser.uid]: {
+        uid: currentUser.uid,
+        name: playerNameInput.value.trim() || "لاعب",
+        score: 0,
+        mistakes: 0,
+        hintsUsed: 0
+    }
                     }
                 };
             });
@@ -209,11 +212,12 @@ async function joinRoom() {
             }
 
             room.players[currentUser.uid] = {
-                uid: currentUser.uid,
-                score: 0,
-                mistakes: 0,
-                hintsUsed: 0
-            };
+    uid: currentUser.uid,
+    name: playerNameInput.value.trim() || "لاعب",
+    score: 0,
+    mistakes: 0,
+    hintsUsed: 0
+};
 
             return room;
         });
