@@ -50,6 +50,7 @@ console.log("Firebase multiplayer initialized");
 const createRoomBtn = document.getElementById("createRoomBtn");
 const joinRoomBtn = document.getElementById("joinRoomBtn");
 const roomCodeInput = document.getElementById("roomCodeInput");
+const playerNameInput = document.getElementById("playerNameInput");
 const roomMessage = document.getElementById("roomMessage");
 // عناصر قائمة اللاعبين
 const roomPlayers = document.getElementById("roomPlayers");
