@@ -49,6 +49,7 @@ console.log("Firebase multiplayer initialized");
 // عناصر واجهة اللعب الجماعي
 const createRoomBtn = document.getElementById("createRoomBtn");
 const joinRoomBtn = document.getElementById("joinRoomBtn");
+const startMatchBtn = document.getElementById("startMatchBtn");
 const roomCodeInput = document.getElementById("roomCodeInput");
 const playerNameInput = document.getElementById("playerNameInput");
 const roomMessage = document.getElementById("roomMessage");
@@ -155,6 +156,7 @@ async function createRoom() {
             if (result.committed) {
                 currentRoomCode = code;
                 isHost = true;
+                startMatchBtn.style.display = "block";
                 listenToRoomPlayers();
                 roomMessage.textContent =
                     "رمز غرفتك: " + code;
@@ -176,6 +178,42 @@ async function createRoom() {
 }
 // تشغيل إنشاء الغرفة عند الضغط على الزر
 createRoomBtn.addEventListener("click", createRoom);
+// بدء المباراة
+async function startMatch() {
+    if (!isHost || !currentRoomCode) return;
+
+    roomMessage.textContent = "جارٍ بدء المباراة...";
+
+    try {
+        const roomRef = ref(db, "rooms/" + currentRoomCode);
+
+        const result = await runTransaction(roomRef, (room) => {
+            if (!room || room.hostUid !== currentUser.uid) {
+                return;
+            }
+
+            if (room.status !== "waiting") {
+                return;
+            }
+
+            room.status = "playing";
+            room.startedAt = Date.now();
+
+            return room;
+        });
+
+        if (result.committed) {
+            roomMessage.textContent = "بدأت المباراة!";
+        } else {
+            roomMessage.textContent = "تعذّر بدء المباراة.";
+        }
+    } catch (error) {
+        console.error(error);
+        roomMessage.textContent = "حدث خطأ أثناء بدء المباراة.";
+    }
+}
+
+startMatchBtn.addEventListener("click", startMatch);
 // الانضمام إلى غرفة موجودة
 async function joinRoom() {
     try {
@@ -230,6 +268,7 @@ async function joinRoom() {
 
         currentRoomCode = code;
         isHost = result.snapshot.val().hostUid === currentUser.uid;
+        startMatchBtn.style.display = isHost ? "block" : "none";
 listenToRoomPlayers();
         roomMessage.textContent =
             "انضممت إلى الغرفة بنجاح: " + code;
