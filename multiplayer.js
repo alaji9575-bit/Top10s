@@ -46,3 +46,91 @@ export const authReady = new Promise((resolve, reject) => {
 });
 
 console.log("Firebase multiplayer initialized");
+// عناصر واجهة اللعب الجماعي
+const createRoomBtn = document.getElementById("createRoomBtn");
+const joinRoomBtn = document.getElementById("joinRoomBtn");
+const roomCodeInput = document.getElementById("roomCodeInput");
+const roomMessage = document.getElementById("roomMessage");
+
+// بيانات اللاعب والغرفة
+let currentUser = null;
+let currentRoomCode = null;
+let isHost = false;
+
+// انتظار تسجيل دخول اللاعب
+authReady
+    .then((user) => {
+        currentUser = user;
+        console.log("Player connected:", user.uid);
+    })
+    .catch((error) => {
+        console.error("Login error:", error);
+        roomMessage.textContent = "تعذّر الاتصال. حاول مجددًا.";
+    });
+// إنشاء رمز عشوائي للغرفة
+function generateRoomCode() {
+    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+
+    for (let i = 0; i < 6; i++) {
+        code += characters.charAt(
+            Math.floor(Math.random() * characters.length)
+        );
+    }
+
+    return code;
+}
+// إنشاء غرفة جديدة
+async function createRoom() {
+    try {
+        roomMessage.textContent = "جارٍ إنشاء الغرفة...";
+
+        await authReady;
+
+        let created = false;
+
+        for (let i = 0; i < 5; i++) {
+            const code = generateRoomCode();
+            const roomRef = ref(db, "rooms/" + code);
+
+            const result = await runTransaction(roomRef, (room) => {
+                if (room !== null) {
+                    return;
+                }
+
+                return {
+                    hostUid: currentUser.uid,
+                    status: "waiting",
+                    createdAt: Date.now(),
+                    players: {
+                        [currentUser.uid]: {
+                            uid: currentUser.uid,
+                            score: 0,
+                            mistakes: 0,
+                            hintsUsed: 0
+                        }
+                    }
+                };
+            });
+
+            if (result.committed) {
+                currentRoomCode = code;
+                isHost = true;
+                roomMessage.textContent =
+                    "رمز غرفتك: " + code;
+                created = true;
+                break;
+            }
+        }
+
+        if (!created) {
+            roomMessage.textContent =
+                "تعذّر إنشاء الغرفة. حاول مجددًا.";
+        }
+
+    } catch (error) {
+        console.error(error);
+        roomMessage.textContent =
+            "تعذّر إنشاء الغرفة حاليًا.";
+    }
+}
