@@ -136,3 +136,69 @@ async function createRoom() {
 }
 // تشغيل إنشاء الغرفة عند الضغط على الزر
 createRoomBtn.addEventListener("click", createRoom);
+// الانضمام إلى غرفة موجودة
+async function joinRoom() {
+    try {
+        const code = roomCodeInput.value.trim().toUpperCase();
+
+        if (!code) {
+            roomMessage.textContent = "أدخل رمز الغرفة أولًا.";
+            return;
+        }
+
+        if (code.length !== 6) {
+            roomMessage.textContent = "رمز الغرفة يجب أن يتكون من 6 خانات.";
+            return;
+        }
+
+        roomMessage.textContent = "جارٍ البحث عن الغرفة...";
+
+        await authReady;
+
+        const roomRef = ref(db, "rooms/" + code);
+        const result = await runTransaction(roomRef, (room) => {
+            if (!room || room.status !== "waiting") {
+                return;
+            }
+
+            room.players = room.players || {};
+
+            if (room.players[currentUser.uid]) {
+                return room;
+            }
+
+            if (Object.keys(room.players).length >= 8) {
+                return;
+            }
+
+            room.players[currentUser.uid] = {
+                uid: currentUser.uid,
+                score: 0,
+                mistakes: 0,
+                hintsUsed: 0
+            };
+
+            return room;
+        });
+
+        if (!result.committed) {
+            roomMessage.textContent =
+                "الغرفة غير موجودة أو ممتلئة أو بدأت اللعبة.";
+            return;
+        }
+
+        currentRoomCode = code;
+        isHost = result.snapshot.val().hostUid === currentUser.uid;
+
+        roomMessage.textContent =
+            "انضممت إلى الغرفة بنجاح: " + code;
+
+    } catch (error) {
+        console.error(error);
+        roomMessage.textContent =
+            "تعذّر الانضمام إلى الغرفة.";
+    }
+}
+
+// ربط زر الانضمام بالوظيفة
+joinRoomBtn.addEventListener("click", joinRoom);
