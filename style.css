@@ -310,3 +310,45 @@ button:active {
         transform: translateY(0);
     }
 }
+/* قائمة اللعب الجماعي */
+.multiplayer-menu {
+    margin-top: 30px;
+    padding: 20px;
+    border: 1px solid rgba(245, 197, 66, 0.3);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.multiplayer-menu h3 {
+    color: #f5c542;
+    margin-bottom: 18px;
+}
+
+.multiplayer-menu button {
+    display: block;
+    width: 100%;
+    margin: 12px auto;
+}
+
+.multiplayer-menu input {
+    display: block;
+    width: 100%;
+    padding: 13px;
+    margin: 15px auto;
+    border: 1px solid #f5c542;
+    border-radius: 10px;
+    background: #172033;
+    color: white;
+    text-align: center;
+    font-size: 16px;
+}
+
+.multiplayer-menu input::placeholder {
+    color: #aeb8cc;
+}
+
+#roomMessage {
+    margin-top: 12px;
+    color: #f5c542;
+    font-size: 14px;
+}
