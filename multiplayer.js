@@ -51,7 +51,10 @@ const createRoomBtn = document.getElementById("createRoomBtn");
 const joinRoomBtn = document.getElementById("joinRoomBtn");
 const roomCodeInput = document.getElementById("roomCodeInput");
 const roomMessage = document.getElementById("roomMessage");
-
+// عناصر قائمة اللاعبين
+const roomPlayers = document.getElementById("roomPlayers");
+const playersCount = document.getElementById("playersCount");
+const playersList = document.getElementById("playersList");
 // بيانات اللاعب والغرفة
 let currentUser = null;
 let currentRoomCode = null;
@@ -67,6 +70,38 @@ authReady
         console.error("Login error:", error);
         roomMessage.textContent = "تعذّر الاتصال. حاول مجددًا.";
     });
+// مراقبة قائمة اللاعبين
+function listenToRoomPlayers() {
+    if (!currentRoomCode) return;
+
+    const playersRef = ref(
+        db,
+        "rooms/" + currentRoomCode + "/players"
+    );
+
+    roomPlayers.style.display = "block";
+
+    onValue(playersRef, (snapshot) => {
+        const players = snapshot.val() || {};
+        const playerIds = Object.keys(players);
+
+        playersCount.textContent =
+            "عدد اللاعبين: " + playerIds.length + " / 8";
+
+        playersList.innerHTML = "";
+
+        playerIds.forEach((uid, index) => {
+            const li = document.createElement("li");
+
+            li.textContent =
+                uid === currentUser.uid
+                    ? "أنت (اللاعب " + (index + 1) + ")"
+                    : "اللاعب " + (index + 1);
+
+            playersList.appendChild(li);
+        });
+    });
+}
 // إنشاء رمز عشوائي للغرفة
 function generateRoomCode() {
     const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -116,6 +151,7 @@ async function createRoom() {
             if (result.committed) {
                 currentRoomCode = code;
                 isHost = true;
+                listenToRoomPlayers();
                 roomMessage.textContent =
                     "رمز غرفتك: " + code;
                 created = true;
@@ -189,7 +225,7 @@ async function joinRoom() {
 
         currentRoomCode = code;
         isHost = result.snapshot.val().hostUid === currentUser.uid;
-
+listenToRoomPlayers();
         roomMessage.textContent =
             "انضممت إلى الغرفة بنجاح: " + code;
 
