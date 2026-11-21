@@ -119,12 +119,20 @@ function listenToRoomStatus() {
         const status = snapshot.val();
 
         if (status === "playing") {
-            roomMessage.textContent = "بدأت المباراة!";
+    roomMessage.textContent = "بدأت المباراة!";
+    startMatchBtn.style.display = "none";
+
+    nextRoundBtn.style.display = isHost ? "block" : "none";
+    endMatchBtn.style.display = isHost ? "block" : "none";
+                } else if (status === "ended") {
+            roomMessage.textContent = "انتهت المباراة! 🏁";
             startMatchBtn.style.display = "none";
+            nextRoundBtn.style.display = "none";
+            endMatchBtn.style.display = "none";
         }
     });
 }
-// إنشاء رمز عشوائي للغرفة
+        // إنشاء رمز عشوائي للغرفة
 function generateRoomCode() {
     const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let code = "";
@@ -217,7 +225,8 @@ async function startMatch() {
 
             room.status = "playing";
             room.startedAt = Date.now();
-
+room.roundNumber = 1;
+room.roundStartedAt = Date.now();
             return room;
         });
 
@@ -233,6 +242,52 @@ async function startMatch() {
 }
 
 startMatchBtn.addEventListener("click", startMatch);
+async function nextRound() {
+    if (!isHost || !currentRoomCode) return;
+
+    const roomRef = ref(db, "rooms/" + currentRoomCode);
+
+    const result = await runTransaction(roomRef, (room) => {
+        if (!room || room.hostUid !== currentUser.uid || room.status !== "playing") {
+            return;
+        }
+
+        room.roundNumber = (room.roundNumber || 1) + 1;
+        room.roundStartedAt = Date.now();
+
+        return room;
+    });
+
+    if (result.committed) {
+        roomMessage.textContent = "بدأت الجولة " + result.snapshot.val().roundNumber;
+    } else {
+        roomMessage.textContent = "تعذّر بدء الجولة التالية.";
+    }
+}
+nextRoundBtn.addEventListener("click", nextRound);
+async function endMatch() {
+    if (!isHost || !currentRoomCode) return;
+
+    const roomRef = ref(db, "rooms/" + currentRoomCode);
+
+    const result = await runTransaction(roomRef, (room) => {
+        if (!room || room.hostUid !== currentUser.uid || room.status !== "playing") {
+            return;
+        }
+
+        room.status = "ended";
+        room.endedAt = Date.now();
+
+        return room;
+    });
+
+    if (result.committed) {
+        roomMessage.textContent = "انتهت المباراة! 🏁";
+    } else {
+        roomMessage.textContent = "تعذّر إنهاء المباراة.";
+    }
+}
+endMatchBtn.addEventListener("click", endMatch);
 // الانضمام إلى غرفة موجودة
 async function joinRoom() {
     try {
