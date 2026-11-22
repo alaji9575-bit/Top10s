@@ -501,3 +501,21 @@ button:active {
     width: 100%;
     margin: 12px auto;
 }
+
+
+/* صفحة مستقلة لنتائج كل جولة */
+.game.multiplayer-results-active > :not(#multiplayerResults) {
+    display: none !important;
+}
+
+.game.multiplayer-results-active #multiplayerResults {
+    display: block !important;
+    margin-top: 0;
+}
+
+#continueRoundBtn {
+    display: block;
+    width: 100%;
+    margin-top: 18px;
+    font-size: 20px;
+}
