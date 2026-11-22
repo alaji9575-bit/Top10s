@@ -549,6 +549,59 @@ window.loadMultiplayerQuestion = function(index) {
     loadQuestion();
 };
 
+// واجهة الربط مع اللعب الجماعي
+window.isMultiplayerMode = false;
+window.multiplayerAnswerHandler = null;
+
+window.setMultiplayerMode = function(enabled) {
+    window.isMultiplayerMode = Boolean(enabled);
+    document.getElementById("skipBtn").style.display = enabled ? "none" : "inline-block";
+    newChallengeBtn.style.display = "none";
+    hintBtn.style.display = enabled ? "none" : "inline-block";
+};
+
+window.setMultiplayerAnswerHandler = function(handler) {
+    window.multiplayerAnswerHandler = handler;
+};
+
+window.findMultiplayerAnswerIndex = function(rawAnswer) {
+    const answer = normalize(rawAnswer || "");
+    if (!answer) return -1;
+
+    return questions[currentQuestion].answers.findIndex((item) =>
+        [item[0], ...item[1]].some(alias => normalize(alias) === answer)
+    );
+};
+
+window.updateMultiplayerAnswers = function(records, ownPoints) {
+    const shared = records || {};
+    found = Object.keys(shared)
+        .map(Number)
+        .filter(index => Number.isInteger(index) && index >= 0 && index < 10);
+    scoreCount.textContent = found.length + " / 10";
+    pointsCount.textContent = Number(ownPoints) || 0;
+    renderAnswers();
+
+    if (found.length === 10) {
+        message.textContent = "اكتُشفت الإجابات العشر!";
+        message.style.color = "#8fffc2";
+    }
+};
+
+window.applyMultiplayerWrongAnswer = function() {
+    mistakes++;
+    playSound(220, 0.25, "triangle");
+    message.textContent = "إجابة غير صحيحة، حاول مجدداً.";
+    message.style.color = "#ff8290";
+    renderMistakes();
+
+    if (mistakes >= 5) {
+        message.textContent = "انتهت محاولاتك في هذه الجولة.";
+        message.style.color = "#ffe18b";
+    }
+};
+
+
 function renderAnswers() {
     const q = questions[currentQuestion];
 
@@ -590,6 +643,11 @@ function renderMistakes() {
 }
 
 function submitAnswer() {
+    if (window.isMultiplayerMode && typeof window.multiplayerAnswerHandler === "function") {
+        window.multiplayerAnswerHandler(input.value);
+        return;
+    }
+
     const userAnswer = normalize(input.value);
 
     if (!userAnswer || mistakes >= 5 || found.length === 10) return;
