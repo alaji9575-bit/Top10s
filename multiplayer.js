@@ -67,6 +67,17 @@ const roomPlayers = document.getElementById("roomPlayers");
 const playersCount = document.getElementById("playersCount");
 const playersList = document.getElementById("playersList");
 
+function showRoomView() {
+    if (welcomeScreen) welcomeScreen.classList.add("room-active");
+    if (roomPlayers) roomPlayers.style.display = "block";
+    const soloStartBtn = document.getElementById("startBtn");
+    if (soloStartBtn) soloStartBtn.style.display = "none";
+    if (playerNameInput) playerNameInput.style.display = "none";
+    if (createRoomBtn) createRoomBtn.style.display = "none";
+    if (roomCodeInput) roomCodeInput.style.display = "none";
+    if (joinRoomBtn) joinRoomBtn.style.display = "none";
+}
+
 // مراقبة السؤال الحالي ومزامنته لجميع لاعبي الغرفة
 function listenToCurrentQuestion() {
     if (!currentRoomCode) return;
@@ -432,6 +443,7 @@ async function createRoom() {
 
             if (result.committed) {
                 currentRoomCode = code;
+                showRoomView();
                 isHost = true;
                 startMatchBtn.style.display = "block";
                 if (exitRoomBtn) exitRoomBtn.style.display = "block";
