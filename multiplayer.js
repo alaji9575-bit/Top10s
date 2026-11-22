@@ -54,6 +54,8 @@ const joinRoomBtn = document.getElementById("joinRoomBtn");
 const startMatchBtn = document.getElementById("startMatchBtn");
 const nextRoundBtn = document.getElementById("nextRoundBtn");
 const endMatchBtn = document.getElementById("endMatchBtn");
+const exitRoomBtn = document.getElementById("exitRoomBtn");
+const exitRoomGameBtn = document.getElementById("exitRoomGameBtn");
 const roomCodeInput = document.getElementById("roomCodeInput");
 const playerNameInput = document.getElementById("playerNameInput");
 const roomMessage = document.getElementById("roomMessage");
@@ -341,8 +343,19 @@ function listenToRoomStatus() {
     onValue(statusRef, (snapshot) => {
         const status = snapshot.val();
 
-        if (status === "playing") {
+        if (status === "waiting") {
+            matchIsPlaying = false;
+            if (welcomeScreen) welcomeScreen.style.display = "flex";
+            if (gameScreen) gameScreen.style.display = "none";
+            startMatchBtn.style.display = isHost ? "block" : "none";
+            nextRoundBtn.style.display = "none";
+            endMatchBtn.style.display = "none";
+            if (exitRoomBtn) exitRoomBtn.style.display = "block";
+            if (exitRoomGameBtn) exitRoomGameBtn.style.display = "none";
+        } else if (status === "playing") {
             matchIsPlaying = true;
+            if (exitRoomBtn) exitRoomBtn.style.display = "none";
+            if (exitRoomGameBtn) exitRoomGameBtn.style.display = "block";
             if (welcomeScreen) welcomeScreen.style.display = "none";
             if (gameScreen) gameScreen.style.display = "block";
             startMatchBtn.style.display = "none";
@@ -350,6 +363,8 @@ function listenToRoomStatus() {
             endMatchBtn.style.display = isHost ? "block" : "none";
         } else if (status === "ended") {
             matchIsPlaying = false;
+            if (exitRoomBtn) exitRoomBtn.style.display = "block";
+            if (exitRoomGameBtn) exitRoomGameBtn.style.display = "none";
             roomMessage.textContent = "انتهت المباراة! 🏁";
             startMatchBtn.style.display = "none";
             nextRoundBtn.style.display = "none";
@@ -417,6 +432,7 @@ async function createRoom() {
                 currentRoomCode = code;
                 isHost = true;
                 startMatchBtn.style.display = "block";
+                if (exitRoomBtn) exitRoomBtn.style.display = "block";
                 listenToRoomPlayers();
                 listenToRoomStatus();
                 listenToCurrentQuestion();
@@ -573,10 +589,67 @@ async function endMatch() {
 }
 endMatchBtn.addEventListener("click", endMatch);
 
+async function returnToRoom() {
+    if (!currentRoomCode) return;
+
+    if (isHost) {
+        try {
+            const roomPath = "rooms/" + currentRoomCode;
+            const historySnapshot = await get(ref(db, roomPath + "/roundHistory"));
+            const history = historySnapshot.val() || {};
+            await Promise.all(Object.keys(history).map(round =>
+                remove(ref(db, roomPath + "/roundHistory/" + round))
+            ));
+            await remove(ref(db, roomPath + "/currentRoundAnswers"));
+            await set(ref(db, roomPath + "/roundNumber"), 1);
+            await set(ref(db, roomPath + "/status"), "waiting");
+            roundHistoryCache = {};
+            roundSummaryShown = false;
+            nextRoundBtn.textContent = "عرض نتائج الجولة 📊";
+            roomMessage.textContent = "الغرفة جاهزة لمباراة جديدة.";
+        } catch (error) {
+            console.error("Return to room error:", error);
+            roomMessage.textContent = "تعذّر تجهيز الغرفة لمباراة جديدة.";
+            return;
+        }
+    } else {
+        roomMessage.textContent = "عدت إلى الغرفة. بانتظار المضيف لبدء مباراة جديدة.";
+        if (welcomeScreen) welcomeScreen.style.display = "flex";
+        if (gameScreen) gameScreen.style.display = "none";
+        if (exitRoomBtn) exitRoomBtn.style.display = "block";
+        if (startMatchBtn) startMatchBtn.style.display = "none";
+    }
+
+    const panel = document.getElementById("multiplayerResults");
+    if (panel) panel.style.display = "none";
+}
+
+async function leaveRoom() {
+    if (!currentRoomCode || !currentUser) return;
+    const code = currentRoomCode;
+    try {
+        if (isHost) {
+            const statusRef = ref(db, "rooms/" + code + "/status");
+            const statusSnapshot = await get(statusRef);
+            if (statusSnapshot.val() !== "ended") {
+                await set(statusRef, "ended");
+            }
+        }
+
+        await remove(ref(db, "rooms/" + code + "/players/" + currentUser.uid));
+        window.location.reload();
+    } catch (error) {
+        console.error("Leave room error:", error);
+        roomMessage.textContent = "تعذّر الخروج من الغرفة. تحقق من اتصالك.";
+    }
+}
+
 const multiplayerHomeBtn = document.getElementById("multiplayerHomeBtn");
 if (multiplayerHomeBtn) {
-    multiplayerHomeBtn.addEventListener("click", () => window.location.reload());
+    multiplayerHomeBtn.addEventListener("click", returnToRoom);
 }
+if (exitRoomBtn) exitRoomBtn.addEventListener("click", leaveRoom);
+if (exitRoomGameBtn) exitRoomGameBtn.addEventListener("click", leaveRoom);
 // الانضمام إلى غرفة موجودة
 async function joinRoom() {
     try {
@@ -633,6 +706,7 @@ await set(playerRef, {
         currentRoomCode = code;
         isHost = hostSnapshot.val() === currentUser.uid;
         startMatchBtn.style.display = isHost ? "block" : "none";
+        if (exitRoomBtn) exitRoomBtn.style.display = "block";
 listenToRoomPlayers();
         listenToRoomStatus();
         listenToCurrentQuestion();
