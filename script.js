@@ -19,45 +19,8 @@ const questions = [
             ["البنسلين", ["المضاد الحيوي"]]
         ]
     },
-    {
-        question: "أفضل 10 ألعاب بلايستيشن",hints: [
-    { answerIndex: 0, text: "تدور أحداثها في مدينة خيالية مستوحاة من لوس أنجلوس." },
-    { answerIndex: 4, text: "تدور أحداثها في أجواء الغرب الأمريكي القديم." },
-    { answerIndex: 8, text: "تجري أحداثها في عالم خيالي يُعرف باسم الأراضي الوسطى." }
-],
-        answers: [
-            ["GTA V", ["قراند 5", "قراند", "جراند ثفت أوتو", "Grand Theft Auto", "GTA 5"]],
-            ["Minecraft", ["ماينكرافت", "ماين كرافت", "ماين كرافت"]],
-["God of War", ["قود اوف وار", "جود اوف وور"]],
-["The Last of Us", ["ذا لاست اوف اس", "لاست اوف اس"]],
-["Red Dead Redemption 2", ["ريد ديد", "ريد ديد 2", "ريد ديد ريدمبشن"]],
-["Spider-Man", ["سبايدرمان", "سبايدر مان", "سبايدرمان"]],
-["FIFA", ["فيفا", "افيفا", "EA Sports FC"]],
-["Fortnite", ["فورتنايت", "فورت نايت"]],
-["Elden Ring", ["الدن رينغ", "إلدن رينغ"]],
-["Uncharted", ["انشارتد", "أنشارتد"]]
-        ]
-    },
-    {
-        question: "أفضل 10 حيوانات معروفة",
-      hints: [
-    { answerIndex: 0, text: "يُلقّب بملك الغابة، ويشتهر بقوته وزئيره." },
-    { answerIndex: 2, text: "حيوان ضخم يتميز بخرطوم طويل وأذنين كبيرتين." },
-    { answerIndex: 5, text: "حيوان ثديي قوي، ويشتهر بحبه للعسل." }
-],
-        answers: [
-            ["الأسد", ["اسد"]],
-            ["النمر", ["نمر"]],
-            ["الفيل", ["فيل"]],
-            ["الزرافة", ["زرافه"]],
-            ["الحصان", ["حصان"]],
-            ["الدب", ["دب"]],
-            ["الذئب", ["ذيب", "ذئب"]],
-            ["القرد", ["قرد"]],
-            ["الدلفين", ["دلفين"]],
-            ["النسر", ["نسر"]]
-        ]
-    },
+    
+    
      {
         question: "أشهر 10 دول سياحية",
        hints: [
@@ -318,26 +281,7 @@ const questions = [
             ["بن تن", ["بن 10", "بين تن"]]
         ]
       },
-      {
-        question: "أشهر 10 أشياء موجودة في الفضاء",
-        hints: [
-    { answerIndex: 0, text: "نجم يمد الأرض بالضوء والحرارة." },
-    { answerIndex: 3, text: "كوكب يُعرف باسم الكوكب الأحمر." },
-    { answerIndex: 8, text: "منطقة في الفضاء جاذبيتها قوية جدًا لدرجة أن الضوء لا يستطيع الإفلات منها." }
-],
-        answers: [
-            ["الشمس", ["الشمس"]],
-            ["القمر", ["القمر"]],
-            ["الأرض", ["كوكب الأرض"]],
-            ["المريخ", ["كوكب المريخ"]],
-            ["المشتري", ["كوكب المشتري"]],
-            ["زحل", ["كوكب زحل"]],
-            ["النجوم", ["نجمة"]],
-            ["المجرات", ["مجرة"]],
-            ["الثقوب السوداء", ["ثقب أسود"]],
-            ["المذنبات", ["مذنب"]]
-        ]
-      },
+      
       {
         question: "أشهر 10 أشياء نستخدمها يوميًا",
         hints: [
@@ -358,26 +302,7 @@ const questions = [
             ["الحذاء", ["الأحذية"]]
         ]
       },
-      {
-        question: "أشهر 10 مهن في العالم",
-        hints: [
-    { answerIndex: 0, text: "يعالج المرضى ويشخّص الأمراض." },
-    { answerIndex: 1, text: "ينقل المعرفة للطلاب ويساعدهم على التعلم." },
-    { answerIndex: 7, text: "يكتب التعليمات البرمجية لإنشاء التطبيقات والمواقع." }
-],
-        answers: [
-            ["الطبيب", ["دكتور"]],
-            ["المعلم", ["مدرس", "أستاذ"]],
-            ["المهندس", ["مهندس مدني"]],
-            ["الطيار", ["كابتن طائرة"]],
-            ["الشرطي", ["رجل الشرطة"]],
-            ["المحامي", ["محام"]],
-            ["المحاسب", ["محاسب مالي"]],
-            ["المبرمج", ["مبرمج حاسوب"]],
-            ["الطباخ", ["الشيف", "الطاهي"]],
-            ["المزارع", ["فلاح"]]
-        ]
-      },
+      
       {
         question: "أشهر 10 أشياء تحدث في الطبيعة",
         hints: [
@@ -398,6 +323,106 @@ const questions = [
             ["الشفق القطبي", ["الأضواء القطبية"]]
         ]
       }
+    {
+        question: "أشهر 10 مسلسلات تلفزيونية",
+        hints: [
+            { answerIndex: 0, text: "مسلسل فانتازيا شهير تدور أحداثه حول صراع عائلات على العرش." },
+            { answerIndex: 1, text: "مسلسل جريمة ودراما عن مدرس كيمياء يدخل عالم تصنيع المخدرات." },
+            { answerIndex: 2, text: "مسلسل كوميدي أمريكي يتابع حياة ستة أصدقاء في نيويورك." }
+        ],
+        answers: [
+            ["Game of Thrones", ["قيم اوف ثرونز", "غيم اوف ثرونز", "جيم اوف ثرونز", "غيم أوف ثرونز", "قيم أوف ثرونز"]],
+            ["Breaking Bad", ["بريكنغ باد", "بريكينغ باد", "بريكنج باد", "بريكنق باد"]],
+            ["Friends", ["فريندز", "فريندس", "الأصدقاء"]],
+            ["Money Heist", ["ماني هايست", "لا كاسا دي بابيل", "لاكاسا دي بابيل"]],
+            ["The Walking Dead", ["ذا ووكينغ ديد", "ووكينغ ديد", "الموتى السائرون"]],
+            ["Stranger Things", ["سترينجر ثينقز", "سترينجر ثينغز", "أشياء غريبة"]],
+            ["Prison Break", ["بريزون بريك", "بريزن بريك", "الهروب من السجن"]],
+            ["Sherlock", ["شيرلوك", "شرلوك"]],
+            ["Squid Game", ["سكواد غيم", "سكويد غيم", "لعبة الحبار"]],
+            ["The Big Bang Theory", ["بيغ بانغ ثيوري", "بيج بانج ثيوري", "نظرية الانفجار العظيم"]]
+        ]
+    },
+    {
+        question: "أشهر 10 شركات سيارات",
+        hints: [
+            { answerIndex: 0, text: "شركة يابانية تشتهر بسيارات مثل كورولا وكامري." },
+            { answerIndex: 1, text: "شركة ألمانية فاخرة يرتبط شعارها بنجمة ثلاثية." },
+            { answerIndex: 5, text: "شركة إيطالية تشتهر بالسيارات الرياضية ذات الحصان الجامح." }
+        ],
+        answers: [
+            ["Toyota", ["تويوتا"]],
+            ["Mercedes-Benz", ["مرسيدس", "مرسيدس بنز", "مرسيدس بينز"]],
+            ["BMW", ["بي ام دبليو", "بي إم دبليو", "بي ام"]],
+            ["Ford", ["فورد"]],
+            ["Honda", ["هوندا"]],
+            ["Ferrari", ["فيراري", "فراري"]],
+            ["Tesla", ["تسلا"]],
+            ["Volkswagen", ["فولكس فاجن", "فولكس واجن", "فولكسفاغن"]],
+            ["Hyundai", ["هيونداي", "هونداي"]],
+            ["Nissan", ["نيسان"]]
+        ]
+    },
+    {
+        question: "أكبر 10 دول من حيث المساحة",
+        hints: [
+            { answerIndex: 0, text: "أكبر دولة في العالم، وتمتد أراضيها عبر قارتي أوروبا وآسيا." },
+            { answerIndex: 1, text: "دولة في أمريكا الشمالية تشتهر بمساحتها الشاسعة وبحيراتها الكثيرة." },
+            { answerIndex: 9, text: "أكبر دولة في قارة أفريقيا من حيث المساحة." }
+        ],
+        answers: [
+            ["روسيا", ["روسيه"]],
+            ["كندا", ["كنـدا"]],
+            ["الصين", ["جمهورية الصين"]],
+            ["الولايات المتحدة", ["أمريكا", "امريكا", "الولايات المتحده", "USA", "United States"]],
+            ["البرازيل", ["برازيل"]],
+            ["أستراليا", ["استراليا", "اوستراليا"]],
+            ["الهند", ["هند"]],
+            ["الأرجنتين", ["ارجنتين"]],
+            ["كازاخستان", ["كازخستان"]],
+            ["الجزائر", ["جزاير"]]
+        ]
+    },
+    {
+        question: "أكثر 10 دول سكانًا",
+        hints: [
+            { answerIndex: 0, text: "دولة آسيوية تجاوز عدد سكانها الصين في السنوات الأخيرة." },
+            { answerIndex: 1, text: "دولة آسيوية كانت الأكبر سكانًا في العالم قبل الهند." },
+            { answerIndex: 2, text: "دولة في أمريكا الشمالية تأتي في المرتبة الثالثة من حيث عدد السكان." }
+        ],
+        answers: [
+            ["الهند", ["الهند"]],
+            ["الصين", ["الصين"]],
+            ["الولايات المتحدة", ["أمريكا", "امريكا", "الولايات المتحده", "USA", "United States"]],
+            ["إندونيسيا", ["اندونيسيا"]],
+            ["باكستان", ["باكستان"]],
+            ["نيجيريا", ["نيجيريا"]],
+            ["البرازيل", ["البرازيل"]],
+            ["بنغلاديش", ["بنجلاديش", "بنغلاديش"]],
+            ["روسيا", ["روسيا"]],
+            ["إثيوبيا", ["اثيوبيا"]]
+        ]
+    },
+    {
+        question: "أشهر 10 تطبيقات يستخدمها الناس",
+        hints: [
+            { answerIndex: 0, text: "تطبيق مراسلة شهير يحمل أيقونة هاتف داخل فقاعة خضراء." },
+            { answerIndex: 1, text: "تطبيق لمشاركة الصور ومقاطع الفيديو ويشتهر بالقصص." },
+            { answerIndex: 3, text: "منصة شهيرة لمشاهدة ومشاركة مقاطع الفيديو." }
+        ],
+        answers: [
+            ["WhatsApp", ["واتساب", "واتس اب", "واتسآب", "واتس"]],
+            ["Instagram", ["انستغرام", "إنستغرام", "انستجرام", "إنستجرام"]],
+            ["TikTok", ["تيك توك", "تيكتوك"]],
+            ["YouTube", ["يوتيوب"]],
+            ["Facebook", ["فيسبوك", "فيس بوك"]],
+            ["Snapchat", ["سناب شات", "سناب"]],
+            ["Telegram", ["تيليجرام", "تلغرام", "تليجرام"]],
+            ["Google Maps", ["خرائط جوجل", "قوقل ماب", "غوغل مابس", "جوجل مابس", "قوقل مابس"]],
+            ["Gmail", ["جيميل", "جي ميل", "قوقل ميل", "غوغل ميل"]],
+            ["Spotify", ["سبوتيفاي", "سبوتفاي"]]
+        ]
+    },
 ];
 window.gameQuestions = questions;
 let currentQuestion = 0;
@@ -489,7 +514,7 @@ hintsCount.textContent = 3 - hintedAnswers.length;
     message.style.color = "#ffe18b";
 }
 function normalize(text) {
-    return text
+    return String(text || "")
         .toLowerCase()
         .trim()
         .replace(/[\u064B-\u065F\u0670]/g, "")
@@ -499,7 +524,45 @@ function normalize(text) {
         .replace(/ئ/g, "ي")
         .replace(/ة/g, "ه")
         .replace(/ى/g, "ي")
-        .replace(/[\s\-_.,!?،؛:()]/g, "");
+        .replace(/[\s\-_.,!?،؛:()'’]/g, "");
+}
+
+function editDistance(a, b) {
+    let previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+        const current = [i];
+        for (let j = 1; j <= b.length; j++) {
+            current[j] = Math.min(current[j - 1] + 1, previous[j] + 1,
+                previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        }
+        previous = current;
+    }
+    return previous[b.length];
+}
+
+function answerMatches(rawAnswer, acceptedAnswers) {
+    const inputAnswer = normalize(rawAnswer);
+    if (!inputAnswer) return false;
+    const aliases = acceptedAnswers.map(normalize).filter(Boolean);
+    if (aliases.includes(inputAnswer)) return true;
+
+    const variants = new Set([inputAnswer]);
+    for (const [from, to] of [["ج", "غ"], ["ج", "ق"], ["غ", "ق"], ["ب", "پ"], ["ف", "ڤ"]]) {
+        for (const value of [...variants]) {
+            if (value.includes(from)) variants.add(value.replaceAll(from, to));
+            if (value.includes(to)) variants.add(value.replaceAll(to, from));
+        }
+    }
+    if (aliases.some(alias => variants.has(alias))) return true;
+
+    return aliases.some(alias => {
+        const sameScript = /[a-z]/i.test(alias) === /[a-z]/i.test(inputAnswer);
+        const longest = Math.max(alias.length, inputAnswer.length);
+        if (!sameScript || longest < 5) return false;
+        const limit = longest >= 10 ? 2 : 1;
+        return Math.abs(alias.length - inputAnswer.length) <= limit &&
+            editDistance(alias, inputAnswer) <= limit;
+    });
 }
 function goHome() {
     game.style.display = "none";
@@ -565,11 +628,9 @@ window.setMultiplayerAnswerHandler = function(handler) {
 };
 
 window.findMultiplayerAnswerIndex = function(rawAnswer) {
-    const answer = normalize(rawAnswer || "");
-    if (!answer) return -1;
-
-    return questions[currentQuestion].answers.findIndex((item) =>
-        [item[0], ...item[1]].some(alias => normalize(alias) === answer)
+    if (!normalize(rawAnswer)) return -1;
+    return questions[currentQuestion].answers.findIndex(item =>
+        answerMatches(rawAnswer, [item[0], ...item[1]])
     );
 };
 
@@ -661,8 +722,7 @@ function submitAnswer() {
     const answerIndex = q.answers.findIndex((answer, index) => {
         if (found.includes(index)) return false;
 
-        return [answer[0], ...answer[1]]
-            .some(item => normalize(item) === userAnswer);
+        return answerMatches(userAnswer, [answer[0], ...answer[1]]);
     });
 
     if (answerIndex !== -1) {
