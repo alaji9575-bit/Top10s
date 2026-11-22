@@ -60,6 +60,34 @@ const roomMessage = document.getElementById("roomMessage");
 const roomPlayers = document.getElementById("roomPlayers");
 const playersCount = document.getElementById("playersCount");
 const playersList = document.getElementById("playersList");
+
+// مراقبة السؤال الحالي ومزامنته لجميع لاعبي الغرفة
+function listenToCurrentQuestion() {
+    if (!currentRoomCode) return;
+
+    const questionRef = ref(
+        db,
+        "rooms/" + currentRoomCode + "/currentQuestionIndex"
+    );
+
+    onValue(questionRef, (snapshot) => {
+        if (!snapshot.exists()) return;
+
+        const questionIndex = Number(snapshot.val());
+        if (
+            !Number.isInteger(questionIndex) ||
+            questionIndex < 0 ||
+            questionIndex >= gameQuestions.length
+        ) {
+            roomMessage.textContent = "تعذّر تحميل سؤال الجولة.";
+            return;
+        }
+
+        const question = gameQuestions[questionIndex];
+        roomMessage.textContent = "السؤال الحالي: " + question.question;
+    });
+}
+
 // بيانات اللاعب والغرفة
 let currentUser = null;
 let currentRoomCode = null;
@@ -122,7 +150,6 @@ function listenToRoomStatus() {
         const status = snapshot.val();
 
         if (status === "playing") {
-    roomMessage.textContent = "بدأت المباراة!";
     startMatchBtn.style.display = "none";
 
     nextRoundBtn.style.display = isHost ? "block" : "none";
@@ -188,6 +215,7 @@ async function createRoom() {
                 startMatchBtn.style.display = "block";
                 listenToRoomPlayers();
                 listenToRoomStatus();
+                listenToCurrentQuestion();
                 roomMessage.textContent =
                     "رمز غرفتك: " + code;
                 created = true;
@@ -236,6 +264,18 @@ const now = Date.now();
 await set(ref(db, "rooms/" + currentRoomCode + "/startedAt"), now);
 await set(ref(db, "rooms/" + currentRoomCode + "/roundNumber"), 1);
 await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), now);
+
+if (gameQuestions.length === 0) {
+    roomMessage.textContent = "لا توجد أسئلة متاحة.";
+    return;
+}
+
+const questionIndex = Math.floor(Math.random() * gameQuestions.length);
+await set(
+    ref(db, "rooms/" + currentRoomCode + "/currentQuestionIndex"),
+    questionIndex
+);
+
 await set(statusRef, "playing");
 
 roomMessage.textContent = "بدأت المباراة!";
@@ -279,7 +319,12 @@ if (result.committed) {
         ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"),
         Date.now()
     );
-    roomMessage.textContent = "بدأت الجولة التالية!";
+
+    const questionIndex = Math.floor(Math.random() * gameQuestions.length);
+    await set(
+        ref(db, "rooms/" + currentRoomCode + "/currentQuestionIndex"),
+        questionIndex
+    );
 } else {
     roomMessage.textContent = "تعذّر الانتقال إلى الجولة التالية.";
 }
@@ -377,6 +422,7 @@ await set(playerRef, {
         startMatchBtn.style.display = isHost ? "block" : "none";
 listenToRoomPlayers();
         listenToRoomStatus();
+        listenToCurrentQuestion();
         roomMessage.textContent =
             "انضممت إلى الغرفة بنجاح: " + code;
 
