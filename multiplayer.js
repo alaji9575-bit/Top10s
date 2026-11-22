@@ -14,6 +14,7 @@ import {
     runTransaction,
     onValue
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-database.js";
+const gameQuestions = window.gameQuestions || [];
 const firebaseConfig = {
     apiKey: "AIzaSyBAz9CIktHU7EAzfCel8luT7GcNUL2TbRU",
     authDomain: "top10s-faaf0.firebaseapp.com",
