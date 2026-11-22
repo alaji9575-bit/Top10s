@@ -12,7 +12,8 @@ import {
     set,
     get,
     runTransaction,
-    onValue
+    onValue,
+    remove
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-database.js";
 const gameQuestions = window.gameQuestions || [];
 const firebaseConfig = {
@@ -100,6 +101,76 @@ function listenToCurrentQuestion() {
 let currentUser = null;
 let currentRoomCode = null;
 let isHost = false;
+let matchIsPlaying = false;
+let sharedFoundAnswers = {};
+
+const answerInput = document.getElementById("answerInput");
+const gameMessage = document.getElementById("message");
+
+function listenToCurrentRoundAnswers() {
+    if (!currentRoomCode) return;
+
+    const answersRef = ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers");
+    onValue(answersRef, (snapshot) => {
+        sharedFoundAnswers = snapshot.val() || {};
+        const ownPoints = Object.values(sharedFoundAnswers)
+            .filter(record => record && record.uid === currentUser.uid)
+            .reduce((total, record) => total + (Number(record.points) || 0), 0);
+
+        if (typeof window.updateMultiplayerAnswers === "function") {
+            window.updateMultiplayerAnswers(sharedFoundAnswers, ownPoints);
+        }
+    });
+}
+
+async function submitMultiplayerAnswer(rawAnswer) {
+    const answer = String(rawAnswer || "").trim();
+    if (!answer || !currentRoomCode || !matchIsPlaying) return;
+
+    answerInput.value = "";
+    const answerIndex = window.findMultiplayerAnswerIndex(answer);
+
+    if (answerIndex < 0) {
+        window.applyMultiplayerWrongAnswer();
+        return;
+    }
+
+    if (sharedFoundAnswers[answerIndex]) {
+        gameMessage.textContent = "هذه الإجابة اكتشفها لاعب آخر بالفعل.";
+        gameMessage.style.color = "#ffe18b";
+        return;
+    }
+
+    const answerRef = ref(
+        db,
+        "rooms/" + currentRoomCode + "/currentRoundAnswers/" + answerIndex
+    );
+    const points = 100 - (answerIndex * 10);
+
+    try {
+        const result = await runTransaction(answerRef, (current) => {
+            if (current !== null) return;
+            return {
+                uid: currentUser.uid,
+                claimedAt: Date.now(),
+                points
+            };
+        });
+
+        if (result.committed) {
+            gameMessage.textContent = "إجابة صحيحة! تم تسجيلها للجميع.";
+            gameMessage.style.color = "#8fffc2";
+        } else {
+            gameMessage.textContent = "سبق لاعب آخر إلى هذه الإجابة.";
+            gameMessage.style.color = "#ffe18b";
+        }
+    } catch (error) {
+        console.error("Answer submission error:", error);
+        gameMessage.textContent = "تعذّر تسجيل الإجابة. تحقق من الاتصال.";
+        gameMessage.style.color = "#ff8290";
+    }
+}
+
 
 // انتظار تسجيل دخول اللاعب
 authReady
@@ -158,6 +229,7 @@ function listenToRoomStatus() {
         const status = snapshot.val();
 
         if (status === "playing") {
+    matchIsPlaying = true;
     if (welcomeScreen) welcomeScreen.style.display = "none";
     if (gameScreen) gameScreen.style.display = "block";
     startMatchBtn.style.display = "none";
@@ -165,6 +237,7 @@ function listenToRoomStatus() {
     nextRoundBtn.style.display = isHost ? "block" : "none";
     endMatchBtn.style.display = isHost ? "block" : "none";
                 } else if (status === "ended") {
+            matchIsPlaying = false;
             roomMessage.textContent = "انتهت المباراة! 🏁";
             startMatchBtn.style.display = "none";
             nextRoundBtn.style.display = "none";
@@ -226,6 +299,9 @@ async function createRoom() {
                 listenToRoomPlayers();
                 listenToRoomStatus();
                 listenToCurrentQuestion();
+                listenToCurrentRoundAnswers();
+                window.setMultiplayerMode(true);
+                window.setMultiplayerAnswerHandler(submitMultiplayerAnswer);
                 roomMessage.textContent =
                     "رمز غرفتك: " + code;
                 created = true;
@@ -325,6 +401,14 @@ const result = await runTransaction(roundNumberRef, (number) => {
 });
 
 if (result.committed) {
+    const oldAnswersSnapshot = await get(
+        ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers")
+    );
+    const oldAnswers = oldAnswersSnapshot.val() || {};
+    await Promise.all(Object.keys(oldAnswers).map((answerIndex) =>
+        remove(ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers/" + answerIndex))
+    ));
+
     await set(
         ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"),
         Date.now()
@@ -433,6 +517,9 @@ await set(playerRef, {
 listenToRoomPlayers();
         listenToRoomStatus();
         listenToCurrentQuestion();
+        listenToCurrentRoundAnswers();
+        window.setMultiplayerMode(true);
+        window.setMultiplayerAnswerHandler(submitMultiplayerAnswer);
         roomMessage.textContent =
             "انضممت إلى الغرفة بنجاح: " + code;
 
