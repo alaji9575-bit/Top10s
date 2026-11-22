@@ -50,6 +50,8 @@ console.log("Firebase multiplayer initialized");
 const createRoomBtn = document.getElementById("createRoomBtn");
 const joinRoomBtn = document.getElementById("joinRoomBtn");
 const startMatchBtn = document.getElementById("startMatchBtn");
+const nextRoundBtn = document.getElementById("nextRoundBtn");
+const endMatchBtn = document.getElementById("endMatchBtn");
 const roomCodeInput = document.getElementById("roomCodeInput");
 const playerNameInput = document.getElementById("playerNameInput");
 const roomMessage = document.getElementById("roomMessage");
