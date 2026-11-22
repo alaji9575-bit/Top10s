@@ -345,7 +345,7 @@ function listenToRoomStatus() {
 
         if (status === "waiting") {
             matchIsPlaying = false;
-            if (welcomeScreen) welcomeScreen.style.display = "flex";
+            if (welcomeScreen) welcomeScreen.style.display = "block";
             if (gameScreen) gameScreen.style.display = "none";
             const resultsPanel = document.getElementById("multiplayerResults");
             if (resultsPanel) resultsPanel.style.display = "none";
@@ -625,7 +625,7 @@ async function returnToRoom() {
         }
     } else {
         roomMessage.textContent = "عدت إلى الغرفة. بانتظار المضيف لبدء مباراة جديدة.";
-        if (welcomeScreen) welcomeScreen.style.display = "flex";
+        if (welcomeScreen) welcomeScreen.style.display = "block";
         if (gameScreen) gameScreen.style.display = "none";
         if (exitRoomBtn) exitRoomBtn.style.display = "block";
         if (startMatchBtn) startMatchBtn.style.display = "none";
