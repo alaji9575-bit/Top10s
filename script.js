@@ -588,6 +588,10 @@ window.updateMultiplayerAnswers = function(records, ownPoints) {
     }
 };
 
+window.canSubmitMultiplayerAnswer = function() {
+    return mistakes < 5 && found.length < 10;
+};
+
 window.applyMultiplayerWrongAnswer = function() {
     mistakes++;
     playSound(220, 0.25, "triangle");
