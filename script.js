@@ -399,7 +399,7 @@ const questions = [
         ]
       }
 ];
-
+window.gameQuestions = questions;
 let currentQuestion = 0;
 let mistakes = 0;
 let found = [];
