@@ -215,28 +215,32 @@ async function startMatch() {
 
     try {
         const roomRef = ref(db, "rooms/" + currentRoomCode);
+const statusRef = ref(db, "rooms/" + currentRoomCode + "/status");
+const statusSnapshot = await get(statusRef);
 
-        const result = await runTransaction(roomRef, (room) => {
-            if (!room || room.hostUid !== currentUser.uid) {
-                return;
-            }
+const hostRef = ref(db, "rooms/" + currentRoomCode + "/hostUid");
+const hostSnapshot = await get(hostRef);
 
-            if (room.status !== "waiting") {
-                return;
-            }
+if (
+    !statusSnapshot.exists() ||
+    statusSnapshot.val() !== "waiting" ||
+    hostSnapshot.val() !== currentUser.uid
+) {
+    roomMessage.textContent = "تعذّر بدء المباراة.";
+    return;
+}
 
-            room.status = "playing";
-            room.startedAt = Date.now();
-room.roundNumber = 1;
-room.roundStartedAt = Date.now();
-            return room;
-        });
+const now = Date.now();
 
-        if (result.committed) {
-            roomMessage.textContent = "بدأت المباراة!";
-        } else {
-            roomMessage.textContent = "تعذّر بدء المباراة.";
-        }
+await set(ref(db, "rooms/" + currentRoomCode + "/startedAt"), now);
+await set(ref(db, "rooms/" + currentRoomCode + "/roundNumber"), 1);
+await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), now);
+await set(statusRef, "playing");
+
+roomMessage.textContent = "بدأت المباراة!";
+        
+
+        
     } catch (error) {
         console.error(error);
         roomMessage.textContent = "حدث خطأ أثناء بدء المباراة.";
@@ -248,46 +252,70 @@ async function nextRound() {
     if (!isHost || !currentRoomCode) return;
 
     const roomRef = ref(db, "rooms/" + currentRoomCode);
+const statusRef = ref(db, "rooms/" + currentRoomCode + "/status");
+const statusSnapshot = await get(statusRef);
 
-    const result = await runTransaction(roomRef, (room) => {
-        if (!room || room.hostUid !== currentUser.uid || room.status !== "playing") {
-            return;
-        }
+const hostRef = ref(db, "rooms/" + currentRoomCode + "/hostUid");
+const hostSnapshot = await get(hostRef);
 
-        room.roundNumber = (room.roundNumber || 1) + 1;
-        room.roundStartedAt = Date.now();
+if (
+    !statusSnapshot.exists() ||
+    statusSnapshot.val() !== "playing" ||
+    hostSnapshot.val() !== currentUser.uid
+) {
+    roomMessage.textContent = "تعذّر الانتقال إلى الجولة التالية.";
+    return;
+}
 
-        return room;
-    });
+const roundNumberRef = ref(db, "rooms/" + currentRoomCode + "/roundNumber");
 
-    if (result.committed) {
-        roomMessage.textContent = "بدأت الجولة " + result.snapshot.val().roundNumber;
-    } else {
-        roomMessage.textContent = "تعذّر بدء الجولة التالية.";
-    }
+const result = await runTransaction(roundNumberRef, (number) => {
+    return (number || 0) + 1;
+});
+
+if (result.committed) {
+    await set(
+        ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"),
+        Date.now()
+    );
+    roomMessage.textContent = "بدأت الجولة التالية!";
+} else {
+    roomMessage.textContent = "تعذّر الانتقال إلى الجولة التالية.";
+}
+    
+
+    
 }
 nextRoundBtn.addEventListener("click", nextRound);
 async function endMatch() {
     if (!isHost || !currentRoomCode) return;
 
     const roomRef = ref(db, "rooms/" + currentRoomCode);
+const statusRef = ref(db, "rooms/" + currentRoomCode + "/status");
+const statusSnapshot = await get(statusRef);
 
-    const result = await runTransaction(roomRef, (room) => {
-        if (!room || room.hostUid !== currentUser.uid || room.status !== "playing") {
-            return;
-        }
+const hostRef = ref(db, "rooms/" + currentRoomCode + "/hostUid");
+const hostSnapshot = await get(hostRef);
 
-        room.status = "ended";
-        room.endedAt = Date.now();
+if (
+    !statusSnapshot.exists() ||
+    statusSnapshot.val() !== "playing" ||
+    hostSnapshot.val() !== currentUser.uid
+) {
+    roomMessage.textContent = "تعذّر إنهاء المباراة.";
+    return;
+}
 
-        return room;
-    });
+await set(statusRef, "ended");
+await set(
+    ref(db, "rooms/" + currentRoomCode + "/endedAt"),
+    Date.now()
+);
 
-    if (result.committed) {
-        roomMessage.textContent = "انتهت المباراة! 🏁";
-    } else {
-        roomMessage.textContent = "تعذّر إنهاء المباراة.";
-    }
+roomMessage.textContent = "انتهت المباراة! 🏁";
+    
+
+    
 }
 endMatchBtn.addEventListener("click", endMatch);
 // الانضمام إلى غرفة موجودة
