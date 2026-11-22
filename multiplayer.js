@@ -347,6 +347,8 @@ function listenToRoomStatus() {
             matchIsPlaying = false;
             if (welcomeScreen) welcomeScreen.style.display = "flex";
             if (gameScreen) gameScreen.style.display = "none";
+            const resultsPanel = document.getElementById("multiplayerResults");
+            if (resultsPanel) resultsPanel.style.display = "none";
             startMatchBtn.style.display = isHost ? "block" : "none";
             nextRoundBtn.style.display = "none";
             endMatchBtn.style.display = "none";
@@ -485,7 +487,11 @@ if (
 
 const now = Date.now();
 
-await set(ref(db, "rooms/" + currentRoomCode + "/startedAt"), now);
+const startedAtRef = ref(db, "rooms/" + currentRoomCode + "/startedAt");
+const startedAtSnapshot = await get(startedAtRef);
+if (!startedAtSnapshot.exists()) {
+    await set(startedAtRef, now);
+}
 await set(ref(db, "rooms/" + currentRoomCode + "/roundNumber"), 1);
 await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), now);
 
@@ -600,7 +606,12 @@ async function returnToRoom() {
             await Promise.all(Object.keys(history).map(round =>
                 remove(ref(db, roomPath + "/roundHistory/" + round))
             ));
-            await remove(ref(db, roomPath + "/currentRoundAnswers"));
+            const answersSnapshot = await get(ref(db, roomPath + "/currentRoundAnswers"));
+            const answers = answersSnapshot.val() || {};
+            await Promise.all(Object.keys(answers).map(index =>
+                remove(ref(db, roomPath + "/currentRoundAnswers/" + index))
+            ));
+            await remove(ref(db, roomPath + "/endedAt"));
             await set(ref(db, roomPath + "/roundNumber"), 1);
             await set(ref(db, roomPath + "/status"), "waiting");
             roundHistoryCache = {};
