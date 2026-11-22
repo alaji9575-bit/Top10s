@@ -100,6 +100,7 @@ function listenToCurrentQuestion() {
             return;
         }
 
+        hideRoundResultsScreen();
         if (typeof window.loadMultiplayerQuestion === "function") {
             window.loadMultiplayerQuestion(questionIndex);
         } else {
@@ -118,9 +119,26 @@ let matchIsPlaying = false;
 let sharedFoundAnswers = {};
 let roundSummaryShown = false;
 let roundHistoryCache = {};
+let currentRoundNumber = 0;
+
+function hideRoundResultsScreen() {
+    const panel = document.getElementById("multiplayerResults");
+    if (panel) panel.style.display = "none";
+    if (gameScreen) gameScreen.classList.remove("multiplayer-results-active");
+}
 
 const answerInput = document.getElementById("answerInput");
 const gameMessage = document.getElementById("message");
+
+function listenToRoundNumber() {
+    if (!currentRoomCode) return;
+    const roundRef = ref(db, "rooms/" + currentRoomCode + "/roundNumber");
+    onValue(roundRef, (snapshot) => {
+        currentRoundNumber = Number(snapshot.val()) || 0;
+        const completed = roundHistoryCache[currentRoundNumber];
+        if (!completed) hideRoundResultsScreen();
+    });
+}
 
 function listenToRoundHistory() {
     if (!currentRoomCode) return;
@@ -144,9 +162,17 @@ async function renderMultiplayerStandings(latestRound, rounds) {
     const panel = document.getElementById("multiplayerResults");
     const title = document.getElementById("multiplayerResultsTitle");
     const list = document.getElementById("multiplayerStandingsList");
+    const continueButton = document.getElementById("continueRoundBtn");
+    const homeButton = document.getElementById("multiplayerHomeBtn");
     if (!panel || !title || !list) return;
 
-    const playersSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/players"));
+    const [playersSnapshot, statusSnapshot] = await Promise.all([
+        get(ref(db, "rooms/" + currentRoomCode + "/players")),
+        get(ref(db, "rooms/" + currentRoomCode + "/status"))
+    ]);
+    const status = statusSnapshot.val();
+    if (latestRound < currentRoundNumber && status !== "ended") return;
+
     const players = playersSnapshot.val() || {};
     const totals = {};
 
@@ -175,8 +201,7 @@ async function renderMultiplayerStandings(latestRound, rounds) {
         b[1].points - a[1].points || a[1].name.localeCompare(b[1].name, "ar")
     );
 
-    const statusSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/status"));
-    const isFinal = statusSnapshot.val() === "ended";
+    const isFinal = status === "ended";
     title.textContent = isFinal
         ? "🏆 الترتيب النهائي للمباراة"
         : "📊 نتائج الجولة " + latestRound;
@@ -187,12 +212,13 @@ async function renderMultiplayerStandings(latestRound, rounds) {
         const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : (index + 1) + ".";
         row.textContent = medal + " " + player.name +
             " — نقاط الجولة: " + player.roundPoints +
-            " — المجموع: " + player.points;
+            " — المجموع الكلي: " + player.points;
         list.appendChild(row);
     });
 
     panel.style.display = "block";
-    const homeButton = document.getElementById("multiplayerHomeBtn");
+    if (gameScreen) gameScreen.classList.add("multiplayer-results-active");
+    if (continueButton) continueButton.style.display = !isFinal && isHost ? "block" : "none";
     if (homeButton) homeButton.style.display = isFinal ? "block" : "none";
 }
 
@@ -358,8 +384,7 @@ function listenToRoomStatus() {
             matchIsPlaying = false;
             if (welcomeScreen) welcomeScreen.style.display = "block";
             if (gameScreen) gameScreen.style.display = "none";
-            const resultsPanel = document.getElementById("multiplayerResults");
-            if (resultsPanel) resultsPanel.style.display = "none";
+            hideRoundResultsScreen();
             startMatchBtn.style.display = isHost ? "block" : "none";
             nextRoundBtn.style.display = "none";
             endMatchBtn.style.display = "none";
@@ -451,6 +476,7 @@ async function createRoom() {
                 listenToRoomStatus();
                 listenToCurrentQuestion();
                 listenToCurrentRoundAnswers();
+                listenToRoundNumber();
                 listenToRoundHistory();
                 window.setMultiplayerMode(true);
                 window.setMultiplayerAnswerHandler(submitMultiplayerAnswer);
@@ -539,49 +565,61 @@ async function nextRound() {
         const hostSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/hostUid"));
 
         if (statusSnapshot.val() !== "playing" || hostSnapshot.val() !== currentUser.uid) {
-            roomMessage.textContent = "تعذّر الانتقال إلى الجولة التالية.";
-            return;
-        }
-
-        if (!roundSummaryShown) {
-            nextRoundBtn.disabled = true;
-            await saveCurrentRoundResults();
-            roundSummaryShown = true;
-            nextRoundBtn.textContent = "بدء الجولة التالية ⏭️";
-            nextRoundBtn.disabled = false;
+            roomMessage.textContent = "تعذّر عرض نتائج الجولة.";
             return;
         }
 
         nextRoundBtn.disabled = true;
-        const roundNumberRef = ref(db, "rooms/" + currentRoomCode + "/roundNumber");
-        const result = await runTransaction(roundNumberRef, number => (number || 0) + 1);
+        await saveCurrentRoundResults();
+        nextRoundBtn.disabled = false;
+    } catch (error) {
+        console.error("Round results error:", error);
+        roomMessage.textContent = "تعذّر حفظ نتائج الجولة.";
+        nextRoundBtn.disabled = false;
+    }
+}
+nextRoundBtn.addEventListener("click", nextRound);
 
-        if (!result.committed) {
-            throw new Error("تعذّر تحديث رقم الجولة");
+async function continueToNextRound() {
+    if (!isHost || !currentRoomCode) return;
+
+    const continueButton = document.getElementById("continueRoundBtn");
+    if (continueButton) continueButton.disabled = true;
+
+    try {
+        const statusSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/status"));
+        const hostSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/hostUid"));
+
+        if (statusSnapshot.val() !== "playing" || hostSnapshot.val() !== currentUser.uid) {
+            roomMessage.textContent = "المضيف وحده يستطيع بدء الجولة التالية.";
+            return;
         }
+
+        const roundNumberRef = ref(db, "rooms/" + currentRoomCode + "/roundNumber");
+        const result = await runTransaction(roundNumberRef, number => (Number(number) || 0) + 1);
+        if (!result.committed) throw new Error("تعذّر تحديث رقم الجولة");
 
         const oldAnswersSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers"));
         const oldAnswers = oldAnswersSnapshot.val() || {};
         await Promise.all(Object.keys(oldAnswers).map(answerIndex =>
             remove(ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers/" + answerIndex))
         ));
-        await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), Date.now());
 
+        await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), Date.now());
         const questionIndex = Math.floor(Math.random() * gameQuestions.length);
         await set(ref(db, "rooms/" + currentRoomCode + "/currentQuestionIndex"), questionIndex);
-
-        roundSummaryShown = false;
-        nextRoundBtn.textContent = "عرض نتائج الجولة 📊";
-        const panel = document.getElementById("multiplayerResults");
-        if (panel) panel.style.display = "none";
-        nextRoundBtn.disabled = false;
+        hideRoundResultsScreen();
     } catch (error) {
-        console.error("Next round error:", error);
-        roomMessage.textContent = "تعذّر حفظ النتائج أو بدء الجولة التالية.";
-        nextRoundBtn.disabled = false;
+        console.error("Continue round error:", error);
+        roomMessage.textContent = "تعذّر بدء الجولة التالية.";
+    } finally {
+        if (continueButton) continueButton.disabled = false;
     }
 }
-nextRoundBtn.addEventListener("click", nextRound);
+
+const continueRoundBtn = document.getElementById("continueRoundBtn");
+if (continueRoundBtn) continueRoundBtn.addEventListener("click", continueToNextRound);
+
 async function endMatch() {
     if (!isHost || !currentRoomCode) return;
 
@@ -734,6 +772,7 @@ listenToRoomPlayers();
         listenToRoomStatus();
         listenToCurrentQuestion();
         listenToCurrentRoundAnswers();
+        listenToRoundNumber();
         listenToRoundHistory();
         window.setMultiplayerMode(true);
         window.setMultiplayerAnswerHandler(submitMultiplayerAnswer);
