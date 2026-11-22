@@ -86,8 +86,11 @@ function listenToCurrentQuestion() {
             return;
         }
 
-        const question = gameQuestions[questionIndex];
-        questionTitle.textContent = question.question;
+        if (typeof window.loadMultiplayerQuestion === "function") {
+            window.loadMultiplayerQuestion(questionIndex);
+        } else {
+            questionTitle.textContent = gameQuestions[questionIndex].question;
+        }
         if (welcomeScreen) welcomeScreen.style.display = "none";
         if (gameScreen) gameScreen.style.display = "block";
     });
