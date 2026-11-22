@@ -356,7 +356,12 @@ function listenToRoomStatus() {
             endMatchBtn.style.display = "none";
             const panel = document.getElementById("multiplayerResults");
             const homeButton = document.getElementById("multiplayerHomeBtn");
-            if (panel) panel.style.display = "block";
+            const rounds = Object.keys(roundHistoryCache).map(Number).filter(Number.isInteger).sort((a, b) => a - b);
+            if (rounds.length) {
+                renderMultiplayerStandings(rounds[rounds.length - 1], rounds);
+            } else if (panel) {
+                panel.style.display = "block";
+            }
             if (homeButton) homeButton.style.display = "block";
         }
     });
