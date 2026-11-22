@@ -56,6 +56,9 @@ const endMatchBtn = document.getElementById("endMatchBtn");
 const roomCodeInput = document.getElementById("roomCodeInput");
 const playerNameInput = document.getElementById("playerNameInput");
 const roomMessage = document.getElementById("roomMessage");
+const questionTitle = document.getElementById("question");
+const gameScreen = document.getElementById("game");
+const welcomeScreen = document.querySelector(".welcome");
 // عناصر قائمة اللاعبين
 const roomPlayers = document.getElementById("roomPlayers");
 const playersCount = document.getElementById("playersCount");
@@ -84,7 +87,9 @@ function listenToCurrentQuestion() {
         }
 
         const question = gameQuestions[questionIndex];
-        roomMessage.textContent = "السؤال الحالي: " + question.question;
+        questionTitle.textContent = question.question;
+        if (welcomeScreen) welcomeScreen.style.display = "none";
+        if (gameScreen) gameScreen.style.display = "block";
     });
 }
 
@@ -150,6 +155,8 @@ function listenToRoomStatus() {
         const status = snapshot.val();
 
         if (status === "playing") {
+    if (welcomeScreen) welcomeScreen.style.display = "none";
+    if (gameScreen) gameScreen.style.display = "block";
     startMatchBtn.style.display = "none";
 
     nextRoundBtn.style.display = isHost ? "block" : "none";
