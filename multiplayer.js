@@ -365,8 +365,8 @@ function listenToRoomStatus() {
             endMatchBtn.style.display = isHost ? "block" : "none";
         } else if (status === "ended") {
             matchIsPlaying = false;
-            if (exitRoomBtn) exitRoomBtn.style.display = "block";
-            if (exitRoomGameBtn) exitRoomGameBtn.style.display = "none";
+            if (exitRoomBtn) exitRoomBtn.style.display = "none";
+            if (exitRoomGameBtn) exitRoomGameBtn.style.display = "block";
             roomMessage.textContent = "انتهت المباراة! 🏁";
             startMatchBtn.style.display = "none";
             nextRoundBtn.style.display = "none";
