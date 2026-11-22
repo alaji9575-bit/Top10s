@@ -539,6 +539,16 @@ input.value = "";
     renderMistakes();
 }
 
+// إتاحة تحميل السؤال وإجاباته المختارة من الغرفة لجميع اللاعبين
+window.loadMultiplayerQuestion = function(index) {
+    if (!Number.isInteger(index) || index < 0 || index >= questions.length) {
+        return;
+    }
+
+    currentQuestion = index;
+    loadQuestion();
+};
+
 function renderAnswers() {
     const q = questions[currentQuestion];
 
