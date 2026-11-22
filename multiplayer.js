@@ -126,6 +126,10 @@ function listenToCurrentRoundAnswers() {
 async function submitMultiplayerAnswer(rawAnswer) {
     const answer = String(rawAnswer || "").trim();
     if (!answer || !currentRoomCode || !matchIsPlaying) return;
+    if (!window.canSubmitMultiplayerAnswer()) {
+        gameMessage.textContent = "انتهت محاولاتك أو اكتُشفت الإجابات العشر.";
+        return;
+    }
 
     answerInput.value = "";
     const answerIndex = window.findMultiplayerAnswerIndex(answer);
