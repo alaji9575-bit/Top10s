@@ -308,42 +308,43 @@ async function joinRoom() {
         roomMessage.textContent = "جارٍ البحث عن الغرفة...";
 
         await authReady;
+const statusRef = ref(db, "rooms/" + code + "/status");
+const statusSnapshot = await get(statusRef);
 
-        const roomRef = ref(db, "rooms/" + code);
-        const result = await runTransaction(roomRef, (room) => {
-            if (!room || room.status !== "waiting") {
-                return;
-            }
+if (!statusSnapshot.exists() || statusSnapshot.val() !== "waiting") {
+    roomMessage.textContent = "الغرفة غير موجودة أو بدأت اللعبة.";
+    return;
+}
 
-            room.players = room.players || {};
+const playerRef = ref(db, "rooms/" + code + "/players/" + currentUser.uid);
+const playerSnapshot = await get(playerRef);
 
-            if (room.players[currentUser.uid]) {
-                return room;
-            }
+if (playerSnapshot.exists()) {
+    roomMessage.textContent = "أنت منضم إلى هذه الغرفة بالفعل.";
+    return;
+}
 
-            if (Object.keys(room.players).length >= 8) {
-                return;
-            }
+const hostRef = ref(db, "rooms/" + code + "/hostUid");
+const hostSnapshot = await get(hostRef);
 
-            room.players[currentUser.uid] = {
+if (!hostSnapshot.exists()) {
+    roomMessage.textContent = "الغرفة غير موجودة.";
+    return;
+}
+
+await set(playerRef, {
     uid: currentUser.uid,
     name: playerNameInput.value.trim() || "لاعب",
     score: 0,
     mistakes: 0,
     hintsUsed: 0
-};
+});
+        
 
-            return room;
-        });
-
-        if (!result.committed) {
-            roomMessage.textContent =
-                "الغرفة غير موجودة أو ممتلئة أو بدأت اللعبة.";
-            return;
-        }
+        
 
         currentRoomCode = code;
-        isHost = result.snapshot.val().hostUid === currentUser.uid;
+        isHost = hostSnapshot.val() === currentUser.uid;
         startMatchBtn.style.display = isHost ? "block" : "none";
 listenToRoomPlayers();
         listenToRoomStatus();
