@@ -521,7 +521,11 @@ async function nextRound() {
             throw new Error("تعذّر تحديث رقم الجولة");
         }
 
-        await remove(ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers"));
+        const oldAnswersSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers"));
+        const oldAnswers = oldAnswersSnapshot.val() || {};
+        await Promise.all(Object.keys(oldAnswers).map(answerIndex =>
+            remove(ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers/" + answerIndex))
+        ));
         await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), Date.now());
 
         const questionIndex = Math.floor(Math.random() * gameQuestions.length);
@@ -563,6 +567,11 @@ async function endMatch() {
     }
 }
 endMatchBtn.addEventListener("click", endMatch);
+
+const multiplayerHomeBtn = document.getElementById("multiplayerHomeBtn");
+if (multiplayerHomeBtn) {
+    multiplayerHomeBtn.addEventListener("click", () => window.location.reload());
+}
 // الانضمام إلى غرفة موجودة
 async function joinRoom() {
     try {
