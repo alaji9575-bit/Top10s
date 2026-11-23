@@ -16,6 +16,8 @@ import {
     remove
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-database.js";
 const gameQuestions = window.gameQuestions || [];
+// Firebase rules currently permit question indexes 0 through 19.
+const multiplayerQuestionLimit = Math.min(gameQuestions.length, 20);
 const firebaseConfig = {
     apiKey: "AIzaSyBAz9CIktHU7EAzfCel8luT7GcNUL2TbRU",
     authDomain: "top10s-faaf0.firebaseapp.com",
@@ -66,6 +68,10 @@ const welcomeScreen = document.querySelector(".welcome");
 const roomPlayers = document.getElementById("roomPlayers");
 const playersCount = document.getElementById("playersCount");
 const playersList = document.getElementById("playersList");
+const roundDurationSettings = document.getElementById("roundDurationSettings");
+const roundDurationSelect = document.getElementById("roundDurationSelect");
+const roundDurationDisplay = document.getElementById("roundDurationDisplay");
+const roundTimer = document.getElementById("roundTimer");
 
 function showRoomView() {
     if (welcomeScreen) welcomeScreen.classList.add("room-active");
@@ -120,6 +126,159 @@ let sharedFoundAnswers = {};
 let roundSummaryShown = false;
 let roundHistoryCache = {};
 let currentRoundNumber = 0;
+let roundTimerInterval = null;
+let latestRoundStartedAt = null;
+let roundFinishInProgress = false;
+let roundTimeExpired = false;
+
+
+/*
+ * Keep the chosen duration inside the existing numeric roundStartedAt field:
+ * the timestamp is rounded to seconds and its final milliseconds store 60/90/120.
+ * This reuses the already-authorized Firebase path without broadening database rules.
+ */
+function encodeRoundStart(timestamp, durationSeconds) {
+    const duration = [60, 90, 120].includes(Number(durationSeconds))
+        ? Number(durationSeconds)
+        : 90;
+    return Math.floor(Number(timestamp) / 1000) * 1000 + duration;
+}
+
+function getRoundDuration(encodedValue) {
+    const marker = Math.round(Number(encodedValue) % 1000);
+    return [60, 90, 120].includes(marker) ? marker : 90;
+}
+
+function getRoundStartTimestamp(encodedValue) {
+    return Math.floor(Number(encodedValue) / 1000) * 1000;
+}
+
+function durationText(seconds) {
+    if (seconds === 60) return "دقيقة واحدة";
+    if (seconds === 120) return "دقيقتان";
+    return "دقيقة ونصف";
+}
+
+function updateRoundDurationUI(seconds) {
+    if (roundDurationSelect) {
+        roundDurationSelect.value = String(seconds);
+        roundDurationSelect.style.display = isHost ? "block" : "none";
+    }
+    if (roundDurationDisplay) {
+        roundDurationDisplay.textContent = "المدة المحددة: " + durationText(seconds);
+    }
+}
+
+function stopRoundTimer() {
+    if (roundTimerInterval !== null) {
+        clearInterval(roundTimerInterval);
+        roundTimerInterval = null;
+    }
+}
+
+function startRoundTimer(encodedValue) {
+    if (!matchIsPlaying || !roundTimer || !Number.isFinite(Number(encodedValue))) return;
+
+    stopRoundTimer();
+    roundTimeExpired = false;
+    const duration = getRoundDuration(encodedValue);
+    const deadline = getRoundStartTimestamp(encodedValue) + duration * 1000;
+    roundTimer.style.display = "inline-block";
+
+    const tick = () => {
+        const remaining = Math.max(0, deadline - Date.now());
+        const totalSeconds = Math.ceil(remaining / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        roundTimer.textContent =
+            String(minutes).padStart(2, "0") + ":" +
+            String(seconds).padStart(2, "0");
+
+        if (remaining <= 0) {
+            stopRoundTimer();
+            roundTimeExpired = true;
+            if (isHost) finishRound(false);
+        }
+    };
+
+    tick();
+    if (!roundTimeExpired) roundTimerInterval = setInterval(tick, 250);
+}
+
+function listenToRoundTimer() {
+    if (!currentRoomCode) return;
+
+    const startedAtRef = ref(db, "rooms/" + currentRoomCode + "/roundStartedAt");
+    onValue(startedAtRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            const defaultValue = encodeRoundStart(Date.now(), 90);
+            latestRoundStartedAt = defaultValue;
+            updateRoundDurationUI(90);
+            if (isHost) {
+                set(startedAtRef, defaultValue).catch(error =>
+                    console.error("Default round duration save error:", error)
+                );
+            }
+            return;
+        }
+
+        latestRoundStartedAt = Number(snapshot.val());
+        updateRoundDurationUI(getRoundDuration(latestRoundStartedAt));
+        if (matchIsPlaying) startRoundTimer(latestRoundStartedAt);
+    });
+}
+
+if (roundDurationSelect) {
+    roundDurationSelect.addEventListener("change", async () => {
+        if (!isHost || !currentRoomCode || matchIsPlaying) return;
+        const duration = Number(roundDurationSelect.value);
+        if (![60, 90, 120].includes(duration)) return;
+
+        try {
+            const statusSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/status"));
+            if (statusSnapshot.val() !== "waiting") return;
+            await set(
+                ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"),
+                encodeRoundStart(Date.now(), duration)
+            );
+        } catch (error) {
+            console.error("Round duration update error:", error);
+            roomMessage.textContent = "تعذّر حفظ مدة الجولة.";
+        }
+    });
+}
+
+async function getUsedQuestionIndexes() {
+    const [historySnapshot, currentQuestionSnapshot] = await Promise.all([
+        get(ref(db, "rooms/" + currentRoomCode + "/roundHistory")),
+        get(ref(db, "rooms/" + currentRoomCode + "/currentQuestionIndex"))
+    ]);
+
+    const used = new Set();
+    const history = historySnapshot.val() || {};
+    Object.values(history).forEach(round => {
+        const index = Number(round && round.questionIndex);
+        if (Number.isInteger(index) && index >= 0 && index < multiplayerQuestionLimit) {
+            used.add(index);
+        }
+    });
+
+    const currentIndex = Number(currentQuestionSnapshot.val());
+    if (Number.isInteger(currentIndex) && currentIndex >= 0 && currentIndex < multiplayerQuestionLimit) {
+        used.add(currentIndex);
+    }
+
+    return used;
+}
+
+function chooseUnusedQuestionIndex(usedIndexes) {
+    const available = [];
+    for (let index = 0; index < multiplayerQuestionLimit; index++) {
+        if (!usedIndexes.has(index)) available.push(index);
+    }
+    if (available.length === 0) return -1;
+    return available[Math.floor(Math.random() * available.length)];
+}
 
 function hideRoundResultsScreen() {
     const panel = document.getElementById("multiplayerResults");
@@ -229,9 +388,10 @@ async function saveCurrentRoundResults() {
     const existing = await get(historyRef);
     if (existing.exists()) return roundNumber;
 
-    const [answersSnapshot, playersSnapshot] = await Promise.all([
+    const [answersSnapshot, playersSnapshot, questionSnapshot] = await Promise.all([
         get(ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers")),
-        get(ref(db, "rooms/" + currentRoomCode + "/players"))
+        get(ref(db, "rooms/" + currentRoomCode + "/players")),
+        get(ref(db, "rooms/" + currentRoomCode + "/currentQuestionIndex"))
     ]);
 
     const answers = answersSnapshot.val() || {};
@@ -253,7 +413,8 @@ async function saveCurrentRoundResults() {
 
     await set(historyRef, {
         scores,
-        completedAt: Date.now()
+        completedAt: Date.now(),
+        questionIndex: Number(questionSnapshot.val())
     });
 
     return roundNumber;
@@ -278,6 +439,10 @@ function listenToCurrentRoundAnswers() {
 async function submitMultiplayerAnswer(rawAnswer) {
     const answer = String(rawAnswer || "").trim();
     if (!answer || !currentRoomCode || !matchIsPlaying) return;
+    if (roundTimeExpired) {
+        gameMessage.textContent = "انتهى وقت الجولة. انتظر لوحة النتائج.";
+        return;
+    }
     if (!window.canSubmitMultiplayerAnswer()) {
         gameMessage.textContent = "انتهت محاولاتك أو اكتُشفت الإجابات العشر.";
         return;
@@ -382,6 +547,11 @@ function listenToRoomStatus() {
 
         if (status === "waiting") {
             matchIsPlaying = false;
+            roundTimeExpired = false;
+            stopRoundTimer();
+            if (roundTimer) roundTimer.style.display = "none";
+            if (roundDurationSettings) roundDurationSettings.style.display = "block";
+            updateRoundDurationUI(getRoundDuration(latestRoundStartedAt || 90));
             if (welcomeScreen) welcomeScreen.style.display = "block";
             if (gameScreen) gameScreen.style.display = "none";
             hideRoundResultsScreen();
@@ -392,6 +562,8 @@ function listenToRoomStatus() {
             if (exitRoomGameBtn) exitRoomGameBtn.style.display = "none";
         } else if (status === "playing") {
             matchIsPlaying = true;
+            if (roundDurationSettings) roundDurationSettings.style.display = "none";
+            if (latestRoundStartedAt !== null) startRoundTimer(latestRoundStartedAt);
             if (exitRoomBtn) exitRoomBtn.style.display = "none";
             if (exitRoomGameBtn) exitRoomGameBtn.style.display = "block";
             if (welcomeScreen) welcomeScreen.style.display = "none";
@@ -401,6 +573,8 @@ function listenToRoomStatus() {
             endMatchBtn.style.display = isHost ? "block" : "none";
         } else if (status === "ended") {
             matchIsPlaying = false;
+            stopRoundTimer();
+            roundTimeExpired = true;
             if (exitRoomBtn) exitRoomBtn.style.display = "none";
             if (exitRoomGameBtn) exitRoomGameBtn.style.display = "block";
             roomMessage.textContent = "انتهت المباراة! 🏁";
@@ -454,6 +628,7 @@ async function createRoom() {
                     hostUid: currentUser.uid,
                     status: "waiting",
                     createdAt: Date.now(),
+                    roundStartedAt: encodeRoundStart(Date.now(), 90),
                     players: {
     [currentUser.uid]: {
         uid: currentUser.uid,
@@ -478,6 +653,7 @@ async function createRoom() {
                 listenToCurrentRoundAnswers();
                 listenToRoundNumber();
                 listenToRoundHistory();
+                listenToRoundTimer();
                 window.setMultiplayerMode(true);
                 window.setMultiplayerAnswerHandler(submitMultiplayerAnswer);
                 roomMessage.textContent =
@@ -525,24 +701,29 @@ if (
 
 const now = Date.now();
 
+if (multiplayerQuestionLimit === 0) {
+    roomMessage.textContent = "لا توجد أسئلة متاحة للعب الجماعي.";
+    return;
+}
+
 const startedAtRef = ref(db, "rooms/" + currentRoomCode + "/startedAt");
 const startedAtSnapshot = await get(startedAtRef);
 if (!startedAtSnapshot.exists()) {
     await set(startedAtRef, now);
 }
-await set(ref(db, "rooms/" + currentRoomCode + "/roundNumber"), 1);
-await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), now);
+const durationSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"));
+const duration = durationSnapshot.exists()
+    ? getRoundDuration(durationSnapshot.val())
+    : 90;
 
-if (gameQuestions.length === 0) {
-    roomMessage.textContent = "لا توجد أسئلة متاحة.";
+await set(ref(db, "rooms/" + currentRoomCode + "/roundNumber"), 1);
+const questionIndex = chooseUnusedQuestionIndex(new Set());
+if (questionIndex < 0) {
+    roomMessage.textContent = "لا توجد أسئلة جديدة متاحة.";
     return;
 }
-
-const questionIndex = Math.floor(Math.random() * gameQuestions.length);
-await set(
-    ref(db, "rooms/" + currentRoomCode + "/currentQuestionIndex"),
-    questionIndex
-);
+await set(ref(db, "rooms/" + currentRoomCode + "/currentQuestionIndex"), questionIndex);
+await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), encodeRoundStart(now, duration));
 
 await set(statusRef, "playing");
 
@@ -557,26 +738,48 @@ roomMessage.textContent = "بدأت المباراة!";
 }
 
 startMatchBtn.addEventListener("click", startMatch);
-async function nextRound() {
-    if (!isHost || !currentRoomCode) return;
+async function finishRound(forceEndMatch = false) {
+    if (!isHost || !currentRoomCode || roundFinishInProgress) return;
+
+    roundFinishInProgress = true;
+    stopRoundTimer();
+    if (nextRoundBtn) nextRoundBtn.disabled = true;
+    if (endMatchBtn) endMatchBtn.disabled = true;
 
     try {
         const statusSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/status"));
         const hostSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/hostUid"));
 
         if (statusSnapshot.val() !== "playing" || hostSnapshot.val() !== currentUser.uid) {
-            roomMessage.textContent = "تعذّر عرض نتائج الجولة.";
+            roomMessage.textContent = "تعذّر إنهاء الجولة.";
+            roundFinishInProgress = false;
             return;
         }
 
-        nextRoundBtn.disabled = true;
         await saveCurrentRoundResults();
-        nextRoundBtn.disabled = false;
+        const usedIndexes = await getUsedQuestionIndexes();
+        const allQuestionsUsed = usedIndexes.size >= multiplayerQuestionLimit;
+
+        if (forceEndMatch || allQuestionsUsed) {
+            await set(ref(db, "rooms/" + currentRoomCode + "/status"), "ended");
+            await set(ref(db, "rooms/" + currentRoomCode + "/endedAt"), Date.now());
+            roomMessage.textContent = "انتهت المباراة! 🏁";
+        }
     } catch (error) {
-        console.error("Round results error:", error);
+        console.error("Round completion error:", error);
         roomMessage.textContent = "تعذّر حفظ نتائج الجولة.";
-        nextRoundBtn.disabled = false;
+        roundFinishInProgress = false;
+        if (matchIsPlaying && latestRoundStartedAt !== null && !roundTimeExpired) {
+            startRoundTimer(latestRoundStartedAt);
+        }
+    } finally {
+        if (nextRoundBtn) nextRoundBtn.disabled = false;
+        if (endMatchBtn) endMatchBtn.disabled = false;
     }
+}
+
+async function nextRound() {
+    await finishRound(false);
 }
 nextRoundBtn.addEventListener("click", nextRound);
 
@@ -595,9 +798,13 @@ async function continueToNextRound() {
             return;
         }
 
-        const roundNumberRef = ref(db, "rooms/" + currentRoomCode + "/roundNumber");
-        const result = await runTransaction(roundNumberRef, number => (Number(number) || 0) + 1);
-        if (!result.committed) throw new Error("تعذّر تحديث رقم الجولة");
+        const usedIndexes = await getUsedQuestionIndexes();
+        const questionIndex = chooseUnusedQuestionIndex(usedIndexes);
+        if (questionIndex < 0) {
+            await set(ref(db, "rooms/" + currentRoomCode + "/status"), "ended");
+            await set(ref(db, "rooms/" + currentRoomCode + "/endedAt"), Date.now());
+            return;
+        }
 
         const oldAnswersSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers"));
         const oldAnswers = oldAnswersSnapshot.val() || {};
@@ -605,9 +812,15 @@ async function continueToNextRound() {
             remove(ref(db, "rooms/" + currentRoomCode + "/currentRoundAnswers/" + answerIndex))
         ));
 
-        await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), Date.now());
-        const questionIndex = Math.floor(Math.random() * gameQuestions.length);
+        const duration = getRoundDuration(latestRoundStartedAt || 90);
+        const roundNumberRef = ref(db, "rooms/" + currentRoomCode + "/roundNumber");
+        const result = await runTransaction(roundNumberRef, number => (Number(number) || 0) + 1);
+        if (!result.committed) throw new Error("تعذّر تحديث رقم الجولة");
+
         await set(ref(db, "rooms/" + currentRoomCode + "/currentQuestionIndex"), questionIndex);
+        roundFinishInProgress = false;
+        roundTimeExpired = false;
+        await set(ref(db, "rooms/" + currentRoomCode + "/roundStartedAt"), encodeRoundStart(Date.now(), duration));
         hideRoundResultsScreen();
     } catch (error) {
         console.error("Continue round error:", error);
@@ -621,27 +834,7 @@ const continueRoundBtn = document.getElementById("continueRoundBtn");
 if (continueRoundBtn) continueRoundBtn.addEventListener("click", continueToNextRound);
 
 async function endMatch() {
-    if (!isHost || !currentRoomCode) return;
-
-    try {
-        const statusSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/status"));
-        const hostSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/hostUid"));
-
-        if (statusSnapshot.val() !== "playing" || hostSnapshot.val() !== currentUser.uid) {
-            roomMessage.textContent = "تعذّر إنهاء المباراة.";
-            return;
-        }
-
-        endMatchBtn.disabled = true;
-        await saveCurrentRoundResults();
-        await set(ref(db, "rooms/" + currentRoomCode + "/status"), "ended");
-        await set(ref(db, "rooms/" + currentRoomCode + "/endedAt"), Date.now());
-        roomMessage.textContent = "انتهت المباراة! 🏁";
-    } catch (error) {
-        console.error("End match error:", error);
-        roomMessage.textContent = "تعذّر حفظ النتائج النهائية.";
-        endMatchBtn.disabled = false;
-    }
+    await finishRound(true);
 }
 endMatchBtn.addEventListener("click", endMatch);
 
@@ -666,7 +859,10 @@ async function returnToRoom() {
             await set(ref(db, roomPath + "/status"), "waiting");
             roundHistoryCache = {};
             roundSummaryShown = false;
-            nextRoundBtn.textContent = "عرض نتائج الجولة 📊";
+            roundFinishInProgress = false;
+            roundTimeExpired = false;
+            stopRoundTimer();
+            nextRoundBtn.textContent = "إنهاء الجولة وعرض النتائج 📊";
             roomMessage.textContent = "الغرفة جاهزة لمباراة جديدة.";
         } catch (error) {
             console.error("Return to room error:", error);
@@ -774,6 +970,7 @@ listenToRoomPlayers();
         listenToCurrentRoundAnswers();
         listenToRoundNumber();
         listenToRoundHistory();
+        listenToRoundTimer();
         window.setMultiplayerMode(true);
         window.setMultiplayerAnswerHandler(submitMultiplayerAnswer);
         roomMessage.textContent =
