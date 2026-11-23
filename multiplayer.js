@@ -305,6 +305,12 @@ function listenToRoundHistory() {
     const historyRef = ref(db, "rooms/" + currentRoomCode + "/roundHistory");
     onValue(historyRef, (snapshot) => {
         roundHistoryCache = snapshot.val() || {};
+
+        // Lock answer submission for every player as soon as this round is saved.
+        if (currentRoundNumber > 0 && roundHistoryCache[currentRoundNumber]) {
+            roundTimeExpired = true;
+        }
+
         const rounds = Object.keys(roundHistoryCache)
             .map(Number)
             .filter(Number.isInteger)
@@ -741,7 +747,9 @@ startMatchBtn.addEventListener("click", startMatch);
 async function finishRound(forceEndMatch = false) {
     if (!isHost || !currentRoomCode || roundFinishInProgress) return;
 
+    const wasTimeExpired = roundTimeExpired;
     roundFinishInProgress = true;
+    roundTimeExpired = true;
     stopRoundTimer();
     if (nextRoundBtn) nextRoundBtn.disabled = true;
     if (endMatchBtn) endMatchBtn.disabled = true;
@@ -752,6 +760,7 @@ async function finishRound(forceEndMatch = false) {
 
         if (statusSnapshot.val() !== "playing" || hostSnapshot.val() !== currentUser.uid) {
             roomMessage.textContent = "تعذّر إنهاء الجولة.";
+            roundTimeExpired = wasTimeExpired;
             roundFinishInProgress = false;
             return;
         }
@@ -769,7 +778,8 @@ async function finishRound(forceEndMatch = false) {
         console.error("Round completion error:", error);
         roomMessage.textContent = "تعذّر حفظ نتائج الجولة.";
         roundFinishInProgress = false;
-        if (matchIsPlaying && latestRoundStartedAt !== null && !roundTimeExpired) {
+        roundTimeExpired = wasTimeExpired;
+        if (matchIsPlaying && latestRoundStartedAt !== null && !wasTimeExpired) {
             startRoundTimer(latestRoundStartedAt);
         }
     } finally {
