@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>توب 10s | تحدي العشرة</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -55,6 +55,15 @@
     <h4>👥 اللاعبون في الغرفة</h4>
     <p id="playersCount">عدد اللاعبين: 0 / 8</p>
     <ul id="playersList"></ul>
+    <div id="roundDurationSettings" class="round-duration-settings" style="display:none;">
+        <label id="roundDurationLabel" for="roundDurationSelect">مدة الجولة</label>
+        <select id="roundDurationSelect">
+            <option value="60">دقيقة واحدة</option>
+            <option value="90" selected>دقيقة ونصف</option>
+            <option value="120">دقيقتان</option>
+        </select>
+        <p id="roundDurationDisplay">المدة المحددة: دقيقة ونصف</p>
+    </div>
 </div>
 
 </div>
@@ -67,8 +76,9 @@
 
         <section class="game" id="game">
             <h2 id="question">أفضل 10 أشياء</h2>
+            <div id="roundTimer" class="round-timer" style="display:none;">01:30</div>
             <button id="nextRoundBtn" style="display: none;">
-                الجولة التالية ⏭️
+                إنهاء الجولة وعرض النتائج 📊
             </button>
             <button id="endMatchBtn" style="display: none;">
                 إنهاء المباراة 🏁
@@ -126,6 +136,6 @@
     </main>
 
     <script src="script.js?v=6"></script>
-    <script type="module" src="multiplayer.js?v=11"></script>
+    <script type="module" src="multiplayer.js?v=12"></script>
 </body>
 </html>
