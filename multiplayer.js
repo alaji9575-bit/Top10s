@@ -722,7 +722,13 @@ const duration = durationSnapshot.exists()
     ? getRoundDuration(durationSnapshot.val())
     : 90;
 
-await set(ref(db, "rooms/" + currentRoomCode + "/roundNumber"), 1);
+const existingRoundNumber = await get(ref(db, "rooms/" + currentRoomCode + "/roundNumber"));
+if (!existingRoundNumber.exists()) {
+    await set(ref(db, "rooms/" + currentRoomCode + "/roundNumber"), 1);
+} else if (Number(existingRoundNumber.val()) !== 1) {
+    roomMessage.textContent = "تعذّر تهيئة رقم الجولة. أعد الغرفة إلى وضع الانتظار.";
+    return;
+}
 const questionIndex = chooseUnusedQuestionIndex(new Set());
 if (questionIndex < 0) {
     roomMessage.textContent = "لا توجد أسئلة جديدة متاحة.";
