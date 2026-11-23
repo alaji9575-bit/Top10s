@@ -462,12 +462,6 @@ async function submitMultiplayerAnswer(rawAnswer) {
         return;
     }
 
-    if (sharedFoundAnswers[answerIndex]) {
-        gameMessage.textContent = "هذه الإجابة اكتشفها لاعب آخر بالفعل.";
-        gameMessage.style.color = "#ffe18b";
-        return;
-    }
-
     const answerRef = ref(
         db,
         "rooms/" + currentRoomCode + "/currentRoundAnswers/" + answerIndex
@@ -488,7 +482,11 @@ async function submitMultiplayerAnswer(rawAnswer) {
             gameMessage.textContent = "إجابة صحيحة! تم تسجيلها للجميع.";
             gameMessage.style.color = "#8fffc2";
         } else {
-            gameMessage.textContent = "سبق لاعب آخر إلى هذه الإجابة.";
+            const latestAnswerSnapshot = await get(answerRef);
+            const latestAnswer = latestAnswerSnapshot.val();
+            gameMessage.textContent = latestAnswer && latestAnswer.uid === currentUser.uid
+                ? "لقد سجلت هذه الإجابة بالفعل."
+                : "سبق لاعب آخر إلى هذه الإجابة.";
             gameMessage.style.color = "#ffe18b";
         }
     } catch (error) {
@@ -528,6 +526,13 @@ function listenToRoomPlayers() {
             "عدد اللاعبين: " + playerIds.length + " / 8";
 
         playersList.innerHTML = "";
+
+        if (startMatchBtn && isHost) {
+            startMatchBtn.disabled = playerIds.length < 2;
+            startMatchBtn.textContent = playerIds.length < 2
+                ? "بانتظار لاعب آخر..."
+                : "بدء المباراة 🚀";
+        }
 
         playerIds.forEach((uid, index) => {
             const li = document.createElement("li");
@@ -649,6 +654,7 @@ async function createRoom() {
 
             if (result.committed) {
                 currentRoomCode = code;
+                sharedFoundAnswers = {};
                 showRoomView();
                 isHost = true;
                 startMatchBtn.style.display = "block";
@@ -692,6 +698,12 @@ async function startMatch() {
         const roomRef = ref(db, "rooms/" + currentRoomCode);
 const statusRef = ref(db, "rooms/" + currentRoomCode + "/status");
 const statusSnapshot = await get(statusRef);
+const playersSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/players"));
+const players = playersSnapshot.val() || {};
+if (Object.keys(players).length < 2) {
+    roomMessage.textContent = "لا يمكن بدء المباراة قبل انضمام لاعب آخر على الأقل.";
+    return;
+}
 
 const hostRef = ref(db, "rooms/" + currentRoomCode + "/hostUid");
 const hostSnapshot = await get(hostRef);
@@ -977,6 +989,7 @@ await set(playerRef, {
         
 
         currentRoomCode = code;
+        sharedFoundAnswers = {};
         isHost = hostSnapshot.val() === currentUser.uid;
         startMatchBtn.style.display = isHost ? "block" : "none";
         if (exitRoomBtn) exitRoomBtn.style.display = "block";
