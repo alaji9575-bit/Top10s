@@ -639,7 +639,7 @@ async function togglePlayerReady() {
     const nextReady = roomReadinessCache[currentUser.uid] !== true;
     try {
         await set(readyRef, nextReady);
-        roomMessage.textContent = nextReady ? "تم تسجيل استعدادك." : "تم إلغاء استعدادك.";
+        roomMessage.textContent = "رمز الغرفة: " + currentRoomCode + " — " + (nextReady ? "تم تسجيل استعدادك." : "تم إلغاء استعدادك.");
     } catch (error) {
         console.error("Readiness update error:", error);
         roomMessage.textContent = "تعذّر تحديث الاستعداد. تحقق من قواعد Firebase.";
