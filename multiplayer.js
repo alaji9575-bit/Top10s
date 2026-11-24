@@ -55,6 +55,7 @@ console.log("Firebase multiplayer initialized");
 const createRoomBtn = document.getElementById("createRoomBtn");
 const joinRoomBtn = document.getElementById("joinRoomBtn");
 const startMatchBtn = document.getElementById("startMatchBtn");
+const readyBtn = document.getElementById("readyBtn");
 const nextRoundBtn = document.getElementById("nextRoundBtn");
 const endMatchBtn = document.getElementById("endMatchBtn");
 const exitRoomBtn = document.getElementById("exitRoomBtn");
@@ -511,6 +512,7 @@ authReady
 // حالة اتصال اللاعبين
 let roomPlayersCache = {};
 let roomPresenceCache = {};
+let roomReadinessCache = {};
 
 function renderRoomPlayers() {
     const playerIds = Object.keys(roomPlayersCache);
@@ -520,11 +522,21 @@ function renderRoomPlayers() {
 
     playersList.innerHTML = "";
 
+    const allReady = playerIds.length >= 2 &&
+        playerIds.every(uid => roomReadinessCache[uid] === true);
+
     if (startMatchBtn && isHost) {
-        startMatchBtn.disabled = playerIds.length < 2;
+        startMatchBtn.disabled = !allReady;
         startMatchBtn.textContent = playerIds.length < 2
             ? "بانتظار لاعب آخر..."
-            : "بدء المباراة 🚀";
+            : allReady ? "بدء المباراة 🚀" : "بانتظار استعداد اللاعبين...";
+    }
+
+    if (readyBtn && currentUser) {
+        const isReady = roomReadinessCache[currentUser.uid] === true;
+        readyBtn.textContent = isReady ? "إلغاء الاستعداد ↩" : "أنا جاهز ✓";
+        readyBtn.classList.toggle("is-ready", isReady);
+        readyBtn.disabled = !currentRoomCode || matchIsPlaying;
     }
 
     playerIds.forEach((uid, index) => {
@@ -542,8 +554,15 @@ function renderRoomPlayers() {
             (connected ? "is-connected" : "is-disconnected");
         status.textContent = connected ? "متصل" : "غير متصل";
 
+        const readiness = document.createElement("span");
+        const isReady = roomReadinessCache[uid] === true;
+        readiness.className = "player-readiness-status " +
+            (isReady ? "is-ready" : "is-not-ready");
+        readiness.textContent = isReady ? "جاهز" : "غير جاهز";
+
         li.appendChild(name);
         li.appendChild(status);
+        li.appendChild(readiness);
         playersList.appendChild(li);
     });
 }
@@ -583,6 +602,7 @@ function listenToRoomPlayers() {
 
     const playersRef = ref(db, "rooms/" + currentRoomCode + "/players");
     const presenceRef = ref(db, "rooms/" + currentRoomCode + "/presence");
+    const readinessRef = ref(db, "rooms/" + currentRoomCode + "/readiness");
 
     roomPlayers.style.display = "block";
     setupPlayerPresence();
@@ -596,7 +616,6 @@ function listenToRoomPlayers() {
         presenceRef,
         (snapshot) => {
             roomPresenceCache = snapshot.val() || {};
-            console.log("Room presence update:", currentRoomCode, roomPresenceCache);
             renderRoomPlayers();
         },
         (error) => {
@@ -604,7 +623,30 @@ function listenToRoomPlayers() {
             roomMessage.textContent = "تعذّر استقبال حالات اتصال اللاعبين: " + error.message;
         }
     );
+
+    onValue(readinessRef, (snapshot) => {
+        roomReadinessCache = snapshot.val() || {};
+        renderRoomPlayers();
+    }, (error) => {
+        console.error("Room readiness listener error:", error);
+        roomMessage.textContent = "تعذّر تحميل حالات الاستعداد: " + error.message;
+    });
 }
+
+async function togglePlayerReady() {
+    if (!currentRoomCode || !currentUser || matchIsPlaying) return;
+    const readyRef = ref(db, "rooms/" + currentRoomCode + "/readiness/" + currentUser.uid);
+    const nextReady = roomReadinessCache[currentUser.uid] !== true;
+    try {
+        await set(readyRef, nextReady);
+        roomMessage.textContent = nextReady ? "تم تسجيل استعدادك." : "تم إلغاء استعدادك.";
+    } catch (error) {
+        console.error("Readiness update error:", error);
+        roomMessage.textContent = "تعذّر تحديث الاستعداد. تحقق من قواعد Firebase.";
+    }
+}
+
+if (readyBtn) readyBtn.addEventListener("click", togglePlayerReady);
 // مراقبة حالة المباراة
 function listenToRoomStatus() {
     if (!currentRoomCode) return;
@@ -712,6 +754,7 @@ async function createRoom() {
             if (result.committed) {
                 currentRoomCode = code;
                 sharedFoundAnswers = {};
+                await set(ref(db, "rooms/" + code + "/readiness/" + currentUser.uid), false);
                 showRoomView();
                 isHost = true;
                 startMatchBtn.style.display = "block";
@@ -759,6 +802,12 @@ const playersSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/players
 const players = playersSnapshot.val() || {};
 if (Object.keys(players).length < 2) {
     roomMessage.textContent = "لا يمكن بدء المباراة قبل انضمام لاعب آخر على الأقل.";
+    return;
+}
+const readinessSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/readiness"));
+const readiness = readinessSnapshot.val() || {};
+if (!Object.keys(players).every(uid => readiness[uid] === true)) {
+    roomMessage.textContent = "لا يمكن بدء المباراة حتى يصبح جميع اللاعبين جاهزين.";
     return;
 }
 
@@ -1041,6 +1090,7 @@ await set(playerRef, {
     mistakes: 0,
     hintsUsed: 0
 });
+await set(ref(db, "rooms/" + code + "/readiness/" + currentUser.uid), false);
         
 
         
