@@ -549,13 +549,15 @@ async function saveCurrentRoundResults() {
     Object.keys(players).forEach(uid => {
         scores[uid] = {
             name: players[uid].name || "لاعب",
-            points: 0
+            points: 0,
+            correctAnswers: 0
         };
     });
 
     Object.values(answers).forEach(record => {
         if (record && record.uid && scores[record.uid]) {
             scores[record.uid].points += Number(record.points) || 0;
+            scores[record.uid].correctAnswers += 1;
         }
     });
 
@@ -566,6 +568,97 @@ async function saveCurrentRoundResults() {
     });
 
     return roundNumber;
+}
+
+// حفظ إحصائيات اللاعب مرة واحدة فقط عند اكتمال المباراة.
+async function saveCompletedMatchStats() {
+    if (!currentUser || !currentRoomCode) return;
+
+    const [historySnapshot, playersSnapshot, endedAtSnapshot] = await Promise.all([
+        get(ref(db, "rooms/" + currentRoomCode + "/roundHistory")),
+        get(ref(db, "rooms/" + currentRoomCode + "/players")),
+        get(ref(db, "rooms/" + currentRoomCode + "/endedAt"))
+    ]);
+
+    const history = historySnapshot.val() || {};
+    const players = playersSnapshot.val() || {};
+    const totals = {};
+
+    Object.keys(players).forEach(uid => {
+        totals[uid] = {
+            name: players[uid].name || "لاعب",
+            points: 0,
+            correctAnswers: 0
+        };
+    });
+
+    Object.values(history).forEach(round => {
+        const scores = round && round.scores ? round.scores : {};
+        Object.keys(scores).forEach(uid => {
+            if (!totals[uid]) {
+                totals[uid] = {
+                    name: scores[uid].name || "لاعب",
+                    points: 0,
+                    correctAnswers: 0
+                };
+            }
+            totals[uid].points += Number(scores[uid].points) || 0;
+            totals[uid].correctAnswers += Number(scores[uid].correctAnswers) || 0;
+        });
+    });
+
+    const ranking = Object.entries(totals).sort((a, b) =>
+        b[1].points - a[1].points || a[1].name.localeCompare(b[1].name, "ar")
+    );
+    const rank = ranking.findIndex(([uid]) => uid === currentUser.uid) + 1;
+    const player = totals[currentUser.uid];
+    if (!player || rank < 1) return;
+
+    const matchRecord = {
+        roomCode: currentRoomCode,
+        date: Number(endedAtSnapshot.val()) || Date.now(),
+        playerName: player.name,
+        points: player.points,
+        correctAnswers: player.correctAnswers,
+        rank,
+        playerCount: ranking.length,
+        won: rank === 1
+    };
+
+    const statsRef = ref(db, "playerStats/" + currentUser.uid);
+    await runTransaction(statsRef, current => {
+        const stats = current || {
+            matches: 0,
+            wins: 0,
+            totalPoints: 0,
+            correctAnswers: 0,
+            processedMatches: {},
+            recentMatches: []
+        };
+
+        if (stats.processedMatches && stats.processedMatches[currentRoomCode]) {
+            return;
+        }
+
+        const processedMatches = {
+            ...(stats.processedMatches || {}),
+            [currentRoomCode]: true
+        };
+        const recentMatches = Array.isArray(stats.recentMatches)
+            ? stats.recentMatches.slice()
+            : [];
+
+        recentMatches.unshift(matchRecord);
+
+        return {
+            matches: (Number(stats.matches) || 0) + 1,
+            wins: (Number(stats.wins) || 0) + (matchRecord.won ? 1 : 0),
+            totalPoints: (Number(stats.totalPoints) || 0) + matchRecord.points,
+            correctAnswers: (Number(stats.correctAnswers) || 0) + matchRecord.correctAnswers,
+            processedMatches,
+            recentMatches: recentMatches.slice(0, 10)
+        };
+    });
 }
 
 function listenToCurrentRoundAnswers() {
@@ -815,6 +908,9 @@ function listenToRoomStatus() {
             endMatchBtn.style.display = isHost ? "block" : "none";
         } else if (status === "ended") {
             matchIsPlaying = false;
+            saveCompletedMatchStats().catch(error => {
+                console.error("Player statistics save error:", error);
+            });
             stopRoundTimer();
             roundTimeExpired = true;
             if (exitRoomBtn) exitRoomBtn.style.display = "none";
