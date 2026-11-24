@@ -2,8 +2,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebas
 
 import {
     getAuth,
-    signInAnonymously,
-    onAuthStateChanged
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    updateProfile,
+    setPersistence,
+    browserLocalPersistence,
+    signOut
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
 import {
@@ -34,21 +39,156 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getDatabase(app);
 
-export const authReady = new Promise((resolve, reject) => {
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            resolve(user);
-            return;
-        }
+let currentUser = null;
 
+async function usernameToEmail(username) {
+    const normalized = String(username).trim().normalize("NFC").toLocaleLowerCase();
+    const bytes = new TextEncoder().encode(normalized);
+    let binary = "";
+    bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+    const encoded = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    return "u" + encoded + "@top10s.local";
+}
+
+function validateUsername(username) {
+    const value = String(username || "").trim().normalize("NFC");
+    if (value.length < 3 || value.length > 15) {
+        return "اسم المستخدم يجب أن يتكون من 3 إلى 15 خانة.";
+    }
+    if (!/^[\\p{L}\\p{N}_]+$/u.test(value)) {
+        return "استخدم الحروف العربية أو الإنجليزية أو الأرقام أو الشرطة السفلية فقط.";
+    }
+    return "";
+}
+
+function showAuthForm(mode) {
+    document.getElementById("loginForm").style.display = mode === "login" ? "flex" : "none";
+    document.getElementById("registerForm").style.display = mode === "register" ? "flex" : "none";
+    document.getElementById("authMessage").textContent = "";
+}
+
+function authErrorMessage(error) {
+    const code = error && error.code ? error.code : "";
+    const messages = {
+        "auth/invalid-credential": "اسم المستخدم أو كلمة المرور غير صحيحة.",
+        "auth/user-not-found": "لا يوجد حساب بهذا الاسم.",
+        "auth/wrong-password": "كلمة المرور غير صحيحة.",
+        "auth/email-already-in-use": "اسم المستخدم مستخدم بالفعل. اختر اسماً آخر.",
+        "auth/weak-password": "كلمة المرور ضعيفة. استخدم 6 أحرف على الأقل.",
+        "auth/too-many-requests": "محاولات كثيرة. انتظر قليلاً ثم حاول مجدداً.",
+        "auth/network-request-failed": "تعذّر الاتصال بالإنترنت. تحقق من اتصالك.",
+        "auth/invalid-email": "تعذّر استخدام اسم المستخدم هذا. جرّب اسماً آخر."
+    };
+    return messages[code] || "حدث خطأ. تحقق من البيانات وحاول مجدداً.";
+}
+
+const authScreen = document.getElementById("authScreen");
+const appShell = document.getElementById("appShell");
+const authMessage = document.getElementById("authMessage");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const playerNameInput = document.getElementById("playerNameInput");
+
+document.getElementById("showRegisterBtn").addEventListener("click", () => showAuthForm("register"));
+document.getElementById("showLoginBtn").addEventListener("click", () => showAuthForm("login"));
+
+loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const validation = validateUsername(username);
+    if (validation) { authMessage.textContent = validation; return; }
+
+    const button = document.getElementById("loginBtn");
+    button.disabled = true;
+    authMessage.textContent = "جارٍ تسجيل الدخول...";
+    try {
+        await setPersistence(auth, browserLocalPersistence);
+        await signInWithEmailAndPassword(auth, await usernameToEmail(username), password);
+        authMessage.textContent = "";
+    } catch (error) {
+        console.error("Sign-in error:", error);
+        authMessage.textContent = authErrorMessage(error);
+    } finally {
+        button.disabled = false;
+    }
+});
+
+registerForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = document.getElementById("registerUsername").value.trim().normalize("NFC");
+    const password = document.getElementById("registerPassword").value;
+    const confirmation = document.getElementById("registerPasswordConfirm").value;
+    const validation = validateUsername(username);
+    if (validation) { authMessage.textContent = validation; return; }
+    if (password.length < 6) { authMessage.textContent = "كلمة المرور يجب ألا تقل عن 6 أحرف."; return; }
+    if (password !== confirmation) { authMessage.textContent = "كلمتا المرور غير متطابقتين."; return; }
+
+    const button = document.getElementById("registerBtn");
+    button.disabled = true;
+    authMessage.textContent = "جارٍ إنشاء الحساب...";
+    try {
+        await setPersistence(auth, browserLocalPersistence);
+        const credential = await createUserWithEmailAndPassword(
+            auth,
+            await usernameToEmail(username),
+            password
+        );
+        await updateProfile(credential.user, { displayName: username });
+        authMessage.textContent = "";
+    } catch (error) {
+        console.error("Account creation error:", error);
+        authMessage.textContent = authErrorMessage(error);
+    } finally {
+        button.disabled = false;
+    }
+});
+
+onAuthStateChanged(auth, async (user) => {
+    // Old anonymous sessions are not migrated into the new account system.
+    if (user && user.isAnonymous) {
+        try { await signOut(auth); } catch (error) { console.error("Anonymous sign-out error:", error); }
+        return;
+    }
+
+    currentUser = user || null;
+    if (currentUser) {
+        if (playerNameInput) {
+            playerNameInput.value = currentUser.displayName || "";
+            playerNameInput.readOnly = true;
+        }
+        authScreen.style.display = "none";
+        appShell.style.display = "block";
+    } else {
+        appShell.style.display = "none";
+        authScreen.style.display = "flex";
+    }
+});
+
+const logoutButton = document.getElementById("logoutBtn");
+if (logoutButton) {
+    logoutButton.addEventListener("click", async () => {
+        logoutButton.disabled = true;
         try {
-            const result = await signInAnonymously(auth);
-            resolve(result.user);
+            if (currentRoomCode && currentUser) {
+                const roomPath = "rooms/" + currentRoomCode;
+                if (isHost) await set(ref(db, roomPath + "/status"), "ended");
+                await Promise.all([
+                    remove(ref(db, roomPath + "/players/" + currentUser.uid)),
+                    remove(ref(db, roomPath + "/presence/" + currentUser.uid)),
+                    remove(ref(db, roomPath + "/readiness/" + currentUser.uid))
+                ]);
+            }
+            await signOut(auth);
+            currentRoomCode = null;
         } catch (error) {
-            reject(error);
+            console.error("Sign-out error:", error);
+            authMessage.textContent = "تعذّر تسجيل الخروج بشكل كامل. حاول مجدداً.";
+        } finally {
+            logoutButton.disabled = false;
         }
     });
-});
+}
 
 console.log("Firebase multiplayer initialized");
 // عناصر واجهة اللعب الجماعي
@@ -120,7 +260,6 @@ function listenToCurrentQuestion() {
 }
 
 // بيانات اللاعب والغرفة
-let currentUser = null;
 let currentRoomCode = null;
 let isHost = false;
 let matchIsPlaying = false;
@@ -499,16 +638,8 @@ async function submitMultiplayerAnswer(rawAnswer) {
 }
 
 
-// انتظار تسجيل دخول اللاعب
-authReady
-    .then((user) => {
-        currentUser = user;
-        console.log("Player connected:", user.uid);
-    })
-    .catch((error) => {
-        console.error("Login error:", error);
-        roomMessage.textContent = "تعذّر الاتصال. حاول مجددًا.";
-    });
+// ينتظر إنشاء جلسة مصادق عليها من شاشة تسجيل الدخول.
+console.log("Firebase multiplayer initialized");
 // حالة اتصال اللاعبين
 let roomPlayersCache = {};
 let roomPresenceCache = {};
@@ -721,7 +852,7 @@ async function createRoom() {
     try {
         roomMessage.textContent = "جارٍ إنشاء الغرفة...";
 
-        await authReady;
+        if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً.");
 
         let created = false;
 
@@ -742,7 +873,7 @@ async function createRoom() {
                     players: {
     [currentUser.uid]: {
         uid: currentUser.uid,
-        name: playerNameInput.value.trim() || "لاعب",
+        name: currentUser.displayName || "لاعب",
         score: 0,
         mistakes: 0,
         hintsUsed: 0
@@ -1058,7 +1189,7 @@ async function joinRoom() {
 
         roomMessage.textContent = "جارٍ البحث عن الغرفة...";
 
-        await authReady;
+        if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً.");
 const statusRef = ref(db, "rooms/" + code + "/status");
 const statusSnapshot = await get(statusRef);
 
@@ -1085,7 +1216,7 @@ if (!hostSnapshot.exists()) {
 
 await set(playerRef, {
     uid: currentUser.uid,
-    name: playerNameInput.value.trim() || "لاعب",
+    name: currentUser.displayName || "لاعب",
     score: 0,
     mistakes: 0,
     hintsUsed: 0
