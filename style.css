@@ -862,3 +862,30 @@ input:focus, select:focus {
         transition-duration: .01ms !important;
     }
 }
+
+
+/* Multiplayer player connection status */
+#playersList li {
+    justify-content: space-between;
+}
+#playersList .player-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+#playersList .player-connection-status {
+    flex: 0 0 auto;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+#playersList .player-connection-status.is-connected {
+    color: #8fffc2;
+    background: rgba(50, 205, 130, .13);
+    border: 1px solid rgba(80, 230, 155, .25);
+}
+#playersList .player-connection-status.is-disconnected {
+    color: #ffb2b8;
+    background: rgba(255, 90, 110, .12);
+    border: 1px solid rgba(255, 110, 125, .24);
+}
