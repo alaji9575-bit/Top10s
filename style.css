@@ -925,3 +925,101 @@ input:focus, select:focus {
     color: #ffd58a;
     background: rgba(245, 197, 66, .12);
 }
+
+
+/* ===== Username account and sign-in screens ===== */
+.auth-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 16px;
+    background:
+        radial-gradient(ellipse at 15% 12%, rgba(70,111,210,.22), transparent 30rem),
+        radial-gradient(ellipse at 85% 80%, rgba(143,91,220,.18), transparent 30rem),
+        #080d1b;
+}
+.auth-card {
+    width: min(100%, 440px);
+    padding: clamp(24px, 5vw, 38px);
+    border: 1px solid rgba(151,177,232,.2);
+    border-radius: 25px;
+    background: linear-gradient(145deg, rgba(23,34,61,.98), rgba(14,23,43,.98));
+    box-shadow: 0 24px 70px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05);
+}
+.auth-brand {
+    margin-bottom: 4px;
+    color: #f5f7ff;
+    text-align: center;
+    font-size: 43px;
+    font-weight: 900;
+}
+.auth-brand span { color: var(--accent-gold); }
+.auth-subtitle {
+    margin: 0 0 24px;
+    color: var(--text-muted);
+    text-align: center;
+}
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.auth-form h2 {
+    margin: 0 0 8px;
+    color: var(--accent-blue);
+    text-align: center;
+    font-size: 23px;
+}
+.auth-form label {
+    margin-top: 7px;
+    color: #dce6fa;
+    font-weight: 700;
+    font-size: 14px;
+}
+.auth-form input {
+    width: 100%;
+    padding: 12px 14px;
+    text-align: right;
+}
+.auth-form small {
+    color: #9eacc8;
+    font-size: 12px;
+}
+.auth-form button { width: 100%; margin-top: 9px; }
+.auth-form .auth-secondary {
+    color: #dce8ff;
+    background: rgba(38,54,83,.85);
+    border-color: rgba(157,184,238,.2);
+    box-shadow: none;
+}
+#authMessage {
+    min-height: 24px;
+    margin: 14px 0 0;
+    color: var(--accent-gold);
+    text-align: center;
+    font-size: 14px;
+}
+.logout-button {
+    position: absolute;
+    top: 16px;
+    left: 18px;
+    min-height: 38px;
+    padding: 7px 14px;
+    color: #ffe1e5;
+    background: rgba(255,113,136,.14);
+    border: 1px solid rgba(255,113,136,.3);
+    box-shadow: none;
+    font-size: 13px;
+}
+.header { padding-left: 145px; padding-right: 145px; }
+#playerNameInput[readonly] {
+    opacity: .8;
+    cursor: default;
+}
+@media (max-width: 520px) {
+    .auth-card { border-radius: 20px; }
+    .auth-brand { font-size: 37px; }
+    .header { padding-left: 12px; padding-right: 12px; padding-top: 62px; }
+    .logout-button { top: 12px; left: 12px; }
+}
