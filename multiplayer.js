@@ -13,7 +13,8 @@ import {
     get,
     runTransaction,
     onValue,
-    remove
+    remove,
+    onDisconnect
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-database.js";
 const gameQuestions = window.gameQuestions || [];
 // Firebase rules must permit question indexes 0 through 21.
@@ -507,45 +508,93 @@ authReady
         console.error("Login error:", error);
         roomMessage.textContent = "تعذّر الاتصال. حاول مجددًا.";
     });
-// مراقبة قائمة اللاعبين
+// حالة اتصال اللاعبين
+let roomPlayersCache = {};
+let roomPresenceCache = {};
+
+function renderRoomPlayers() {
+    const playerIds = Object.keys(roomPlayersCache);
+
+    playersCount.textContent =
+        "عدد اللاعبين: " + playerIds.length + " / 8";
+
+    playersList.innerHTML = "";
+
+    if (startMatchBtn && isHost) {
+        startMatchBtn.disabled = playerIds.length < 2;
+        startMatchBtn.textContent = playerIds.length < 2
+            ? "بانتظار لاعب آخر..."
+            : "بدء المباراة 🚀";
+    }
+
+    playerIds.forEach((uid, index) => {
+        const li = document.createElement("li");
+        const playerName = roomPlayersCache[uid].name || "لاعب " + (index + 1);
+        const name = document.createElement("span");
+        name.className = "player-name";
+        name.textContent = uid === currentUser.uid
+            ? playerName + " (أنت)"
+            : playerName;
+
+        const status = document.createElement("span");
+        const connected = roomPresenceCache[uid]?.connected === true;
+        status.className = "player-connection-status " +
+            (connected ? "is-connected" : "is-disconnected");
+        status.textContent = connected ? "متصل" : "غير متصل";
+
+        li.appendChild(name);
+        li.appendChild(status);
+        playersList.appendChild(li);
+    });
+}
+
+function setupPlayerPresence() {
+    if (!currentRoomCode || !currentUser) return;
+
+    const connectedRef = ref(db, ".info/connected");
+    const presenceRef = ref(
+        db,
+        "rooms/" + currentRoomCode + "/presence/" + currentUser.uid
+    );
+
+    onValue(connectedRef, async (snapshot) => {
+        if (snapshot.val() !== true) return;
+
+        try {
+            await onDisconnect(presenceRef).set({
+                connected: false,
+                lastChanged: Date.now()
+            });
+
+            await set(presenceRef, {
+                connected: true,
+                lastChanged: Date.now()
+            });
+        } catch (error) {
+            console.error("Presence update error:", error);
+            roomMessage.textContent = "تعذّر تحديث حالة الاتصال.";
+        }
+    });
+}
+
+// مراقبة قائمة اللاعبين وحالات اتصالهم
 function listenToRoomPlayers() {
     if (!currentRoomCode) return;
 
-    const playersRef = ref(
-        db,
-        "rooms/" + currentRoomCode + "/players"
-    );
+    const playersRef = ref(db, "rooms/" + currentRoomCode + "/players");
+    const presenceRef = ref(db, "rooms/" + currentRoomCode + "/presence");
 
     roomPlayers.style.display = "block";
+    setupPlayerPresence();
 
     onValue(playersRef, (snapshot) => {
-        const players = snapshot.val() || {};
-        const playerIds = Object.keys(players);
+        roomPlayersCache = snapshot.val() || {};
+        renderRoomPlayers();
+    });
 
-        playersCount.textContent =
-            "عدد اللاعبين: " + playerIds.length + " / 8";
-
-        playersList.innerHTML = "";
-
-        if (startMatchBtn && isHost) {
-            startMatchBtn.disabled = playerIds.length < 2;
-            startMatchBtn.textContent = playerIds.length < 2
-                ? "بانتظار لاعب آخر..."
-                : "بدء المباراة 🚀";
-        }
-
-        playerIds.forEach((uid, index) => {
-            const li = document.createElement("li");
-
-            const playerName = players[uid].name || "لاعب " + (index + 1);
-
-li.textContent =
-    uid === currentUser.uid
-        ? playerName + " (أنت)"
-        : playerName;
-
-            playersList.appendChild(li);
-        });
+    onValue(presenceRef, (snapshot) => {
+        roomPresenceCache = snapshot.val() || {};
+        renderRoomPlayers();
     });
 }
 // مراقبة حالة المباراة
