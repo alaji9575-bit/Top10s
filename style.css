@@ -889,3 +889,39 @@ input:focus, select:focus {
     background: rgba(255, 90, 110, .12);
     border: 1px solid rgba(255, 110, 125, .24);
 }
+
+
+/* نظام الاستعداد في الغرف الجماعية */
+.ready-button {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px 18px;
+    border: 1px solid rgba(98, 213, 255, .38);
+    border-radius: 12px;
+    background: rgba(40, 130, 190, .18);
+    color: #dff7ff;
+    font-weight: 800;
+    cursor: pointer;
+}
+.ready-button.is-ready {
+    color: #a7ffd0;
+    border-color: rgba(80, 230, 155, .45);
+    background: rgba(50, 205, 130, .16);
+}
+.ready-button:disabled { opacity: .55; cursor: not-allowed; }
+#playersList .player-readiness-status {
+    flex: 0 0 auto;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 700;
+}
+#playersList .player-readiness-status.is-ready {
+    color: #a7ffd0;
+    background: rgba(50, 205, 130, .13);
+}
+#playersList .player-readiness-status.is-not-ready {
+    color: #ffd58a;
+    background: rgba(245, 197, 66, .12);
+}
