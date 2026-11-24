@@ -592,10 +592,18 @@ function listenToRoomPlayers() {
         renderRoomPlayers();
     });
 
-    onValue(presenceRef, (snapshot) => {
-        roomPresenceCache = snapshot.val() || {};
-        renderRoomPlayers();
-    });
+    onValue(
+        presenceRef,
+        (snapshot) => {
+            roomPresenceCache = snapshot.val() || {};
+            console.log("Room presence update:", currentRoomCode, roomPresenceCache);
+            renderRoomPlayers();
+        },
+        (error) => {
+            console.error("Room presence listener error:", error);
+            roomMessage.textContent = "تعذّر استقبال حالات اتصال اللاعبين: " + error.message;
+        }
+    );
 }
 // مراقبة حالة المباراة
 function listenToRoomStatus() {
