@@ -135,6 +135,7 @@ registerForm.addEventListener("submit", async (event) => {
             password
         );
         await updateProfile(credential.user, { displayName: username });
+        if (playerNameInput) playerNameInput.value = username;
         authMessage.textContent = "";
     } catch (error) {
         console.error("Account creation error:", error);
