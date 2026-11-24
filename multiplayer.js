@@ -42,12 +42,12 @@ export const db = getDatabase(app);
 let currentUser = null;
 
 async function usernameToEmail(username) {
-    const normalized = String(username).trim().normalize("NFC").toLocaleLowerCase();
+    const normalized = String(username).trim().normalize("NFC").toLowerCase();
     const bytes = new TextEncoder().encode(normalized);
     let binary = "";
     bytes.forEach(byte => { binary += String.fromCharCode(byte); });
     const encoded = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-    return "u" + encoded + "@top10s.local";
+    return "u" + encoded + "@accounts.top10s.com";
 }
 
 function validateUsername(username) {
@@ -55,7 +55,7 @@ function validateUsername(username) {
     if (value.length < 3 || value.length > 15) {
         return "اسم المستخدم يجب أن يتكون من 3 إلى 15 خانة.";
     }
-    if (!/^[\\p{L}\\p{N}_]+$/u.test(value)) {
+    if (!/^[\p{L}\p{N}_]+$/u.test(value)) {
         return "استخدم الحروف العربية أو الإنجليزية أو الأرقام أو الشرطة السفلية فقط.";
     }
     return "";
@@ -201,7 +201,7 @@ const endMatchBtn = document.getElementById("endMatchBtn");
 const exitRoomBtn = document.getElementById("exitRoomBtn");
 const exitRoomGameBtn = document.getElementById("exitRoomGameBtn");
 const roomCodeInput = document.getElementById("roomCodeInput");
-const playerNameInput = document.getElementById("playerNameInput");
+
 const roomMessage = document.getElementById("roomMessage");
 const questionTitle = document.getElementById("question");
 const gameScreen = document.getElementById("game");
