@@ -469,7 +469,6 @@ async function renderMultiplayerStandings(latestRound, rounds) {
     const panel = document.getElementById("multiplayerResults");
     const title = document.getElementById("multiplayerResultsTitle");
     const list = document.getElementById("multiplayerStandingsList");
-    const continueButton = document.getElementById("continueRoundBtn");
     const homeButton = document.getElementById("multiplayerHomeBtn");
     if (!panel || !title || !list) return;
 
@@ -525,7 +524,6 @@ async function renderMultiplayerStandings(latestRound, rounds) {
 
     panel.style.display = "block";
     if (gameScreen) gameScreen.classList.add("multiplayer-results-active");
-    if (continueButton) continueButton.style.display = "none";
     if (homeButton) homeButton.style.display = isFinal ? "block" : "none";
 }
 
@@ -1091,7 +1089,7 @@ roomMessage.textContent = "بدأت المباراة!";
 }
 
 startMatchBtn.addEventListener("click", startMatch);
-async function finishRound(forceEndMatch = false) {
+async function finishRound() {
     if (!isHost || !currentRoomCode || roundFinishInProgress) return;
 
     const wasTimeExpired = roundTimeExpired;
@@ -1138,15 +1136,13 @@ async function finishRound(forceEndMatch = false) {
 async function continueToNextRound() {
     if (!isHost || !currentRoomCode) return;
 
-    const continueButton = document.getElementById("continueRoundBtn");
-    if (continueButton) continueButton.disabled = true;
-
     try {
         const statusSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/status"));
         const hostSnapshot = await get(ref(db, "rooms/" + currentRoomCode + "/hostUid"));
 
         if (statusSnapshot.val() !== "playing" || hostSnapshot.val() !== currentUser.uid) {
-            roomMessage.textContent = "المضيف وحده يستطيع بدء الجولة التالية.";
+            roomMessage.textContent = "تعذّر الانتقال إلى السؤال التالي.";
+            roundFinishInProgress = false;
             return;
         }
 
@@ -1176,14 +1172,10 @@ async function continueToNextRound() {
         hideRoundResultsScreen();
     } catch (error) {
         console.error("Continue round error:", error);
-        roomMessage.textContent = "تعذّر بدء الجولة التالية.";
-    } finally {
-        if (continueButton) continueButton.disabled = false;
+        roomMessage.textContent = "تعذّر بدء السؤال التالي.";
+        roundFinishInProgress = false;
     }
 }
-
-const continueRoundBtn = document.getElementById("continueRoundBtn");
-if (continueRoundBtn) continueRoundBtn.addEventListener("click", continueToNextRound);
 
 async function returnToRoom() {
     if (!currentRoomCode) return;
