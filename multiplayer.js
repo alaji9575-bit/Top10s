@@ -16,8 +16,8 @@ import {
     remove
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-database.js";
 const gameQuestions = window.gameQuestions || [];
-// Firebase rules currently permit question indexes 0 through 19.
-const multiplayerQuestionLimit = Math.min(gameQuestions.length, 20);
+// Firebase rules must permit question indexes 0 through 21.
+const multiplayerQuestionLimit = Math.min(gameQuestions.length, 22);
 const firebaseConfig = {
     apiKey: "AIzaSyBAz9CIktHU7EAzfCel8luT7GcNUL2TbRU",
     authDomain: "top10s-faaf0.firebaseapp.com",
