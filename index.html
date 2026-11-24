@@ -4,13 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>توب 10s | تحدي العشرة</title>
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
+    <section id="authScreen" class="auth-screen">
+        <div class="auth-card">
+            <div class="auth-brand">توب <span>10s</span></div>
+            <p class="auth-subtitle">سجّل دخولك للانضمام إلى التحدي</p>
+
+            <form id="loginForm" class="auth-form">
+                <h2>تسجيل الدخول</h2>
+                <label for="loginUsername">اسم المستخدم</label>
+                <input id="loginUsername" type="text" maxlength="15" autocomplete="username" placeholder="أدخل اسم المستخدم" required>
+                <label for="loginPassword">كلمة المرور</label>
+                <input id="loginPassword" type="password" autocomplete="current-password" placeholder="أدخل كلمة المرور" required>
+                <button type="submit" id="loginBtn">تسجيل الدخول</button>
+                <button type="button" id="showRegisterBtn" class="auth-secondary">إنشاء حساب جديد</button>
+            </form>
+
+            <form id="registerForm" class="auth-form" style="display:none;">
+                <h2>إنشاء حساب جديد</h2>
+                <label for="registerUsername">اسم المستخدم</label>
+                <input id="registerUsername" type="text" maxlength="15" autocomplete="username" placeholder="3 إلى 15 حرفاً أو رقماً" required>
+                <small>يمكن استخدام الحروف العربية والإنجليزية والأرقام والشرطة السفلية.</small>
+                <label for="registerPassword">كلمة المرور</label>
+                <input id="registerPassword" type="password" minlength="6" autocomplete="new-password" placeholder="6 أحرف على الأقل" required>
+                <label for="registerPasswordConfirm">تأكيد كلمة المرور</label>
+                <input id="registerPasswordConfirm" type="password" minlength="6" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور" required>
+                <button type="submit" id="registerBtn">إنشاء الحساب</button>
+                <button type="button" id="showLoginBtn" class="auth-secondary">العودة إلى تسجيل الدخول</button>
+            </form>
+            <p id="authMessage" role="status" aria-live="polite"></p>
+        </div>
+    </section>
+
+    <div id="appShell" style="display:none;">
     <header class="header">
         <h1>توب <span>10s</span></h1>
         <p>اختبر معلوماتك وتحدَّ نفسك!</p>
+        <button id="logoutBtn" class="logout-button" type="button">تسجيل الخروج</button>
     </header>
 
     <main class="container">
@@ -135,8 +168,9 @@
           </div>
         </section>
     </main>
+    </div>
 
     <script src="script.js?v=6"></script>
-    <script type="module" src="multiplayer.js?v=20"></script>
+    <script type="module" src="multiplayer.js?v=21"></script>
 </body>
 </html>
