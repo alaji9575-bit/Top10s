@@ -1105,3 +1105,60 @@ input:focus, select:focus {
     .personal-stat-card strong { font-size: 23px; }
     #recentMatchesList li { align-items: flex-start; }
 }
+
+
+/* صفحة الترتيب العام */
+.leaderboard-open-button {
+    display: block;
+    width: 100%;
+    margin-top: 11px;
+    background: linear-gradient(135deg, #c4a7ff, #8d7cf0);
+    color: #17112d;
+}
+.leaderboard-screen {
+    position: relative;
+    width: min(94%, 820px);
+    margin: 34px auto 52px;
+    padding: clamp(20px, 4vw, 32px);
+    border: 1px solid rgba(151,177,232,.18);
+    border-radius: 26px;
+    background: linear-gradient(145deg, rgba(23,34,61,.98), rgba(14,23,43,.98));
+    box-shadow: 0 24px 70px rgba(0,0,0,.34);
+}
+.leaderboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+.leaderboard-header h2 { color: var(--accent-gold); font-size: clamp(24px,5vw,32px); }
+.leaderboard-message { color: var(--text-muted); text-align: center; padding: 12px 0; }
+.leaderboard-list { list-style: none; padding: 0; margin: 0; counter-reset: none; }
+.leaderboard-list li {
+    display: grid;
+    grid-template-columns: 42px minmax(0,1fr) auto;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 14px;
+    border: 1px solid rgba(145,174,228,.14);
+    border-radius: 15px;
+    background: linear-gradient(100deg, rgba(58,82,125,.38), rgba(255,255,255,.035));
+}
+.leaderboard-list li:first-child {
+    border-color: rgba(255,209,102,.42);
+    background: linear-gradient(100deg, rgba(255,209,102,.13), rgba(255,255,255,.035));
+}
+.leaderboard-rank { color: var(--accent-gold); font-size: 19px; font-weight: 900; text-align: center; }
+.leaderboard-player { min-width: 0; }
+.leaderboard-player-name { display: block; color: var(--text-main); font-weight: 850; overflow-wrap: anywhere; }
+.leaderboard-player-details { display: block; color: var(--text-muted); font-size: 12px; }
+.leaderboard-points { color: var(--accent-gold); font-weight: 900; white-space: nowrap; text-align: left; }
+@media (max-width: 520px) {
+    .leaderboard-screen { width: calc(100% - 24px); margin: 18px auto 32px; padding: 18px 12px; }
+    .leaderboard-header { align-items: flex-start; }
+    .leaderboard-header button { max-width: 118px; padding: 9px 10px; white-space: normal; }
+    .leaderboard-list li { grid-template-columns: 30px minmax(0,1fr); gap: 8px; padding: 11px 9px; }
+    .leaderboard-points { grid-column: 2; text-align: right; }
+}
