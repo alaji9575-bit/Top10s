@@ -752,6 +752,14 @@ async function saveCompletedMatchStats() {
 
     const history = historySnapshot.val() || {};
     const players = playersSnapshot.val() || {};
+
+    // لا تُسجّل المباراة في الإحصائيات إلا بعد اكتمال الأسئلة الخمسة.
+    const completedRounds = [1, 2, 3, 4, 5];
+    if (!completedRounds.every(roundNumber => history[roundNumber] && history[roundNumber].scores)) {
+        console.warn("Match statistics postponed: five completed rounds are not available yet.");
+        return false;
+    }
+
     const totals = {};
 
     Object.keys(players).forEach(uid => {
@@ -806,7 +814,7 @@ async function saveCompletedMatchStats() {
             recentMatches: []
         };
 
-        const matchId = currentRoomCode + "_" + (Number(history[1] && history[1].completedAt) || Number(endedAtSnapshot.val()) || Date.now());
+        const matchId = currentRoomCode + "_" + Number(history[1].completedAt);
         if (stats.processedMatches && stats.processedMatches[matchId]) {
             return;
         }
@@ -830,6 +838,8 @@ async function saveCompletedMatchStats() {
             recentMatches: recentMatches.slice(0, 10)
         };
     });
+
+    return true;
 }
 
 function listenToCurrentRoundAnswers() {
@@ -1048,7 +1058,7 @@ function listenToRoomStatus() {
     if (!currentRoomCode) return;
 
     const statusRef = ref(db, "rooms/" + currentRoomCode + "/status");
-    onValue(statusRef, (snapshot) => {
+    onValue(statusRef, async (snapshot) => {
         const status = snapshot.val();
 
         if (status === "waiting") {
@@ -1075,24 +1085,49 @@ function listenToRoomStatus() {
             startMatchBtn.style.display = "none";
         } else if (status === "ended") {
             matchIsPlaying = false;
-            saveCompletedMatchStats().catch(error => {
-                console.error("Player statistics save error:", error);
-            });
             stopRoundTimer();
             roundTimeExpired = true;
             if (exitRoomBtn) exitRoomBtn.style.display = "none";
             if (exitRoomGameBtn) exitRoomGameBtn.style.display = "block";
             roomMessage.textContent = "انتهت المباراة! 🏁";
             startMatchBtn.style.display = "none";
+
             const panel = document.getElementById("multiplayerResults");
             const homeButton = document.getElementById("multiplayerHomeBtn");
-            const rounds = Object.keys(roundHistoryCache).map(Number).filter(Number.isInteger).sort((a, b) => a - b);
-            if (rounds.length) {
-                renderMultiplayerStandings(rounds[rounds.length - 1], rounds);
-            } else if (panel) {
-                panel.style.display = "block";
+            if (openLeaderboardBtn) openLeaderboardBtn.style.display = "none";
+
+            // انتظر حفظ إحصائيات اللاعب قبل إتاحة فتح الترتيب العام.
+            try {
+                const saved = await saveCompletedMatchStats();
+                const rounds = Object.keys(roundHistoryCache)
+                    .map(Number)
+                    .filter(Number.isInteger)
+                    .sort((a, b) => a - b);
+
+                if (rounds.length) {
+                    await renderMultiplayerStandings(rounds[rounds.length - 1], rounds);
+                } else if (panel) {
+                    panel.style.display = "block";
+                }
+
+                if (homeButton) homeButton.style.display = "block";
+                if (openLeaderboardBtn) {
+                    openLeaderboardBtn.style.display = saved ? "block" : "none";
+                }
+            } catch (error) {
+                console.error("Player statistics save error:", error);
+                if (roomMessage) {
+                    roomMessage.textContent = "انتهت المباراة، لكن تعذّر تحديث إحصائياتك. تحقق من الاتصال.";
+                }
+                const rounds = Object.keys(roundHistoryCache)
+                    .map(Number)
+                    .filter(Number.isInteger)
+                    .sort((a, b) => a - b);
+                if (rounds.length) {
+                    await renderMultiplayerStandings(rounds[rounds.length - 1], rounds);
+                }
+                if (homeButton) homeButton.style.display = "block";
             }
-            if (homeButton) homeButton.style.display = "block";
         }
     });
 }
