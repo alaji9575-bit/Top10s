@@ -133,6 +133,19 @@
             <p id="personalStatsMessage" class="personal-stats-message" role="status" aria-live="polite"></p>
         </section>
 
+        <section id="leaderboardScreen" class="leaderboard-screen" style="display:none;">
+            <div class="leaderboard-header">
+                <div>
+                    <p class="stats-eyebrow">منافسة جميع اللاعبين</p>
+                    <h2>الترتيب العام 🏆</h2>
+                    <p class="stats-username">أفضل اللاعبين حسب مجموع النقاط</p>
+                </div>
+                <button id="closeLeaderboardBtn" type="button" class="stats-back-button">العودة إلى النتائج</button>
+            </div>
+            <p id="leaderboardMessage" class="leaderboard-message" role="status" aria-live="polite">جارٍ تحميل الترتيب...</p>
+            <ol id="leaderboardList" class="leaderboard-list"></ol>
+        </section>
+
         <section class="game" id="game">
             <h2 id="question">أفضل 10 أشياء</h2>
             <div id="roundTimer" class="round-timer" style="display:none;">01:30</div>
@@ -183,12 +196,13 @@
               <h2 id="multiplayerResultsTitle">نتائج الجولة</h2>
               <ol id="multiplayerStandingsList"></ol>
               <button id="multiplayerHomeBtn" style="display:none;">العودة إلى الغرفة</button>
+              <button id="openLeaderboardBtn" class="leaderboard-open-button" type="button" style="display:none;">الترتيب العام 🏆</button>
           </div>
         </section>
     </main>
     </div>
 
     <script src="script.js?v=6"></script>
-    <script type="module" src="multiplayer.js?v=23"></script>
+    <script type="module" src="multiplayer.js?v=24"></script>
 </body>
 </html>
