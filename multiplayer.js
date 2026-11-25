@@ -192,6 +192,84 @@ if (logoutButton) {
     });
 }
 
+
+// صفحة الإحصائيات الشخصية
+const openStatsBtn = document.getElementById("openStatsBtn");
+const closeStatsBtn = document.getElementById("closeStatsBtn");
+const personalStatsScreen = document.getElementById("personalStatsScreen");
+
+function formatStatsDate(timestamp) {
+    const date = new Date(Number(timestamp) || Date.now());
+    return date.toLocaleDateString("ar-BH", { year: "numeric", month: "short", day: "numeric" });
+}
+
+async function showPersonalStats() {
+    if (!currentUser || !personalStatsScreen) return;
+
+    const welcome = document.querySelector(".welcome");
+    const game = document.getElementById("game");
+    if (welcome) welcome.style.display = "none";
+    if (game) game.style.display = "none";
+    personalStatsScreen.style.display = "block";
+
+    const message = document.getElementById("personalStatsMessage");
+    const username = document.getElementById("personalStatsUsername");
+    const recentList = document.getElementById("recentMatchesList");
+    const emptyMessage = document.getElementById("recentMatchesEmpty");
+    message.textContent = "جارٍ تحميل إحصائياتك...";
+    username.textContent = "@" + (currentUser.displayName || "لاعب");
+    recentList.replaceChildren();
+    emptyMessage.style.display = "none";
+
+    try {
+        const snapshot = await get(ref(db, "playerStats/" + currentUser.uid));
+        const stats = snapshot.val() || {};
+        const matches = Number(stats.matches) || 0;
+        const wins = Number(stats.wins) || 0;
+        document.getElementById("statMatches").textContent = matches.toLocaleString("ar");
+        document.getElementById("statWins").textContent = wins.toLocaleString("ar");
+        document.getElementById("statTotalPoints").textContent = (Number(stats.totalPoints) || 0).toLocaleString("ar");
+        document.getElementById("statCorrectAnswers").textContent = (Number(stats.correctAnswers) || 0).toLocaleString("ar");
+        document.getElementById("statWinRate").textContent = (matches ? Math.round((wins / matches) * 100) : 0).toLocaleString("ar") + "٪";
+
+        const recent = Array.isArray(stats.recentMatches) ? stats.recentMatches : [];
+        if (!recent.length) {
+            emptyMessage.style.display = "block";
+        } else {
+            recent.slice(0, 10).forEach(match => {
+                const item = document.createElement("li");
+                const main = document.createElement("div");
+                main.className = "recent-match-main";
+                const title = document.createElement("span");
+                title.className = "recent-match-title";
+                title.textContent = "غرفة " + (match.roomCode || "—");
+                const date = document.createElement("span");
+                date.className = "recent-match-date";
+                date.textContent = formatStatsDate(match.date) + " • " + (Number(match.correctAnswers) || 0).toLocaleString("ar") + " إجابة صحيحة";
+                const result = document.createElement("span");
+                result.className = "recent-match-result";
+                result.textContent = (match.won ? "فوز 🏆" : "المركز " + (Number(match.rank) || "—")) + " · " + (Number(match.points) || 0).toLocaleString("ar") + " نقطة";
+                main.append(title, date);
+                item.append(main, result);
+                recentList.appendChild(item);
+            });
+        }
+        message.textContent = matches ? "تم تحديث إحصائياتك." : "ستظهر إحصائياتك هنا بعد إكمال أول مباراة جماعية.";
+    } catch (error) {
+        console.error("Personal stats load error:", error);
+        message.textContent = "تعذّر تحميل الإحصائيات. تحقق من اتصالك بالإنترنت وقواعد Firebase.";
+    }
+}
+
+function closePersonalStats() {
+    if (personalStatsScreen) personalStatsScreen.style.display = "none";
+    const welcome = document.querySelector(".welcome");
+    if (welcome) welcome.style.display = "block";
+}
+
+if (openStatsBtn) openStatsBtn.addEventListener("click", showPersonalStats);
+if (closeStatsBtn) closeStatsBtn.addEventListener("click", closePersonalStats);
+
 console.log("Firebase multiplayer initialized");
 // عناصر واجهة اللعب الجماعي
 const createRoomBtn = document.getElementById("createRoomBtn");
