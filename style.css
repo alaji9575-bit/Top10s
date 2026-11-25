@@ -1023,3 +1023,85 @@ input:focus, select:focus {
     .header { padding-left: 12px; padding-right: 12px; padding-top: 62px; }
     .logout-button { top: 12px; left: 12px; }
 }
+
+
+/* صفحة الإحصائيات الشخصية */
+.stats-entry-button {
+    display: block;
+    width: 100%;
+    margin: 12px auto 0;
+    background: linear-gradient(135deg, #c4a7ff, #8d7cf0);
+    color: #17112d;
+}
+.welcome.room-active #openStatsBtn { display: none !important; }
+.personal-stats-screen {
+    position: relative;
+    width: min(92%, 720px);
+    margin: 34px auto 52px;
+    padding: clamp(22px, 4vw, 34px);
+    border: 1px solid rgba(151,177,232,.18);
+    border-radius: 26px;
+    background: linear-gradient(145deg, rgba(23,34,61,.98), rgba(14,23,43,.98));
+    box-shadow: 0 24px 70px rgba(0,0,0,.34);
+}
+.personal-stats-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+.personal-stats-header h2 { color: var(--accent-gold); font-size: clamp(24px,5vw,32px); }
+.stats-eyebrow { color: var(--accent-blue); font-size: 13px; font-weight: 800; }
+.stats-username { color: var(--text-muted); margin-top: 3px; }
+.stats-back-button { background: #263653; color: #e4edff; white-space: nowrap; }
+.personal-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 12px;
+}
+.personal-stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 17px 14px;
+    border: 1px solid var(--line-soft);
+    border-radius: 16px;
+    background: linear-gradient(145deg, rgba(38,55,88,.82), rgba(23,35,60,.9));
+}
+.personal-stat-card span { color: var(--text-muted); font-size: 13px; }
+.personal-stat-card strong { color: var(--accent-gold); font-size: 27px; font-variant-numeric: tabular-nums; }
+.personal-stat-wide { grid-column: 1 / -1; }
+.recent-matches-panel {
+    margin-top: 22px;
+    padding: 18px 15px;
+    border: 1px solid rgba(98,213,255,.17);
+    border-radius: 18px;
+    background: rgba(6,14,29,.35);
+}
+.recent-matches-panel h3 { color: var(--accent-blue); margin-bottom: 12px; }
+#recentMatchesList { list-style: none; padding: 0; margin: 0; }
+#recentMatchesList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin-top: 9px;
+    border: 1px solid rgba(145,174,228,.12);
+    border-radius: 12px;
+    background: rgba(255,255,255,.035);
+}
+.recent-match-main { min-width: 0; }
+.recent-match-title { display: block; color: var(--text-main); font-weight: 800; }
+.recent-match-date { display: block; color: var(--text-muted); font-size: 12px; }
+.recent-match-result { flex: 0 0 auto; color: var(--accent-gold); font-weight: 800; text-align: left; }
+.recent-matches-empty, .personal-stats-message { color: var(--text-muted); text-align: center; padding: 12px 0; }
+@media (max-width: 480px) {
+    .personal-stats-screen { width: calc(100% - 24px); margin: 18px auto 32px; padding: 20px 14px; }
+    .personal-stats-header { align-items: flex-start; }
+    .personal-stats-header button { padding: 9px 12px; }
+    .personal-stat-card { padding: 14px 11px; }
+    .personal-stat-card strong { font-size: 23px; }
+    #recentMatchesList li { align-items: flex-start; }
+}
