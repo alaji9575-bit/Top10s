@@ -193,6 +193,98 @@ if (logoutButton) {
 }
 
 
+
+// صفحة الترتيب العام للاعبين
+const leaderboardScreen = document.getElementById("leaderboardScreen");
+const openLeaderboardBtn = document.getElementById("openLeaderboardBtn");
+const closeLeaderboardBtn = document.getElementById("closeLeaderboardBtn");
+
+async function showGlobalLeaderboard() {
+    if (!currentUser || !leaderboardScreen) return;
+    const welcome = document.querySelector(".welcome");
+    const game = document.getElementById("game");
+    if (welcome) welcome.style.display = "none";
+    if (game) game.style.display = "none";
+    const personal = document.getElementById("personalStatsScreen");
+    if (personal) personal.style.display = "none";
+    leaderboardScreen.style.display = "block";
+
+    const message = document.getElementById("leaderboardMessage");
+    const list = document.getElementById("leaderboardList");
+    message.textContent = "جارٍ تحميل الترتيب العام...";
+    list.replaceChildren();
+
+    try {
+        const snapshot = await get(ref(db, "playerStats"));
+        const allStats = snapshot.val() || {};
+        const players = Object.entries(allStats).map(([uid, stats]) => {
+            const recent = Array.isArray(stats.recentMatches) ? stats.recentMatches : [];
+            const latest = recent[0] || {};
+            return {
+                uid,
+                name: latest.playerName || "لاعب",
+                matches: Number(stats.matches) || 0,
+                wins: Number(stats.wins) || 0,
+                points: Number(stats.totalPoints) || 0,
+                correctAnswers: Number(stats.correctAnswers) || 0
+            };
+        }).filter(player => player.matches > 0);
+
+        players.sort((a, b) =>
+            b.points - a.points ||
+            b.wins - a.wins ||
+            b.correctAnswers - a.correctAnswers ||
+            a.name.localeCompare(b.name, "ar")
+        );
+
+        if (!players.length) {
+            message.textContent = "لا توجد إحصائيات مسجلة بعد. أكملوا مباريات جماعية لتظهروا هنا.";
+            return;
+        }
+
+        players.forEach((player, index) => {
+            const item = document.createElement("li");
+            const rank = document.createElement("span");
+            rank.className = "leaderboard-rank";
+            rank.textContent = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : String(index + 1);
+
+            const details = document.createElement("div");
+            details.className = "leaderboard-player";
+            const name = document.createElement("span");
+            name.className = "leaderboard-player-name";
+            name.textContent = player.name + (player.uid === currentUser.uid ? " (أنت)" : "");
+            const sub = document.createElement("span");
+            sub.className = "leaderboard-player-details";
+            sub.textContent = player.matches.toLocaleString("ar") + " مباراة • " +
+                player.wins.toLocaleString("ar") + " فوز • " +
+                player.correctAnswers.toLocaleString("ar") + " إجابة صحيحة";
+            details.append(name, sub);
+
+            const points = document.createElement("span");
+            points.className = "leaderboard-points";
+            points.textContent = player.points.toLocaleString("ar") + " نقطة";
+            item.append(rank, details, points);
+            list.appendChild(item);
+        });
+        message.textContent = "عدد اللاعبين في الترتيب: " + players.length.toLocaleString("ar");
+    } catch (error) {
+        console.error("Global leaderboard load error:", error);
+        message.textContent = "تعذّر تحميل الترتيب. تحقق من اتصالك بالإنترنت وقواعد Firebase.";
+    }
+}
+
+function closeGlobalLeaderboard() {
+    if (leaderboardScreen) leaderboardScreen.style.display = "none";
+    const game = document.getElementById("game");
+    if (game) {
+        game.style.display = "block";
+        game.classList.add("multiplayer-results-active");
+    }
+}
+
+if (openLeaderboardBtn) openLeaderboardBtn.addEventListener("click", showGlobalLeaderboard);
+if (closeLeaderboardBtn) closeLeaderboardBtn.addEventListener("click", closeGlobalLeaderboard);
+
 // صفحة الإحصائيات الشخصية
 const openStatsBtn = document.getElementById("openStatsBtn");
 const closeStatsBtn = document.getElementById("closeStatsBtn");
@@ -503,6 +595,7 @@ function chooseUnusedQuestionIndex(usedIndexes) {
 function hideRoundResultsScreen() {
     const panel = document.getElementById("multiplayerResults");
     if (panel) panel.style.display = "none";
+    if (openLeaderboardBtn) openLeaderboardBtn.style.display = "none";
     if (gameScreen) gameScreen.classList.remove("multiplayer-results-active");
 }
 
@@ -603,6 +696,7 @@ async function renderMultiplayerStandings(latestRound, rounds) {
     panel.style.display = "block";
     if (gameScreen) gameScreen.classList.add("multiplayer-results-active");
     if (homeButton) homeButton.style.display = isFinal ? "block" : "none";
+    if (openLeaderboardBtn) openLeaderboardBtn.style.display = isFinal ? "block" : "none";
 }
 
 async function saveCurrentRoundResults() {
